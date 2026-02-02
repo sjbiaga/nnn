@@ -23,26 +23,26 @@ class NetworkSuite extends FunSuite:
       loss = MSE[2](),
       learningRate = 0.5,
       Layer[2](
-        Neuron[2](Vector[Float, 2](.15, .20), .35, Sigmoid),
-        Neuron[2](Vector[Float, 2](.25, .30), .35, Sigmoid),
+        Neuron(Vector[Float](.15, .20), .35, Sigmoid),
+        Neuron(Vector[Float](.25, .30), .35, Sigmoid),
       ),
       Layer[2](
-        Neuron[2](Vector[Float, 2](.40, .45), .60, Sigmoid),
-        Neuron[2](Vector[Float, 2](.50, .55), .60, Sigmoid),
+        Neuron(Vector[Float](.40, .45), .60, Sigmoid),
+        Neuron(Vector[Float](.50, .55), .60, Sigmoid),
       )
     )
 
-    assertEquals(nn(), List(Matrix[Float, 2, 3](.35, .15, .20, .35, .25, .30), Matrix[Float, 2, 3](.60, .40, .45, .60, .50, .55)))
+    assertEquals(nn(), List(Matrix[Float][2, 3](.35, .15, .20, .35, .25, .30), Matrix[Float][2, 3](.60, .40, .45, .60, .50, .55)))
 
-    val data = Data[2, 2](Input(Vector[Float, 2](.05, .10)) -> Output(Vector[Float, 2](.01, .99)))
+    val data = Data[2, 2](Input(Vector[Float][2](.05, .10)) -> Output(Vector[Float][2](.01, .99)))
 
     val (epochs, error) = nn(data, 10000)
 
     assert(epochs == 10000 && error < 1E-5)
 
-    val answer = nn(Input(Vector[Float, 2](.05, .10))).answer
+    val answer = nn(Input[2](Vector[Float](.05, .10))).answer
 
-    assertEquals(answer.truncate(2), Vector[Float, 2](.01, .98))
+    assertEquals(answer.truncate(2), Vector[Float][2](.01, .98))
 
   }
 
@@ -60,34 +60,34 @@ class NetworkSuite extends FunSuite:
       loss = MSE[1](),
       learningRate = 3,
       Layer[2](
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
-        Neuron[2](Vector[Float, 2](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
       ),
       Layer[10](
-        Neuron[10](Vector[Float, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
+        Neuron(Vector[Float](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
       ),
     )
 
-    val data = Data[2, 1](Input(Vector[Float, 2](0, 0)) -> Output(Vector[Float, 1](0)),
-                          Input(Vector[Float, 2](0, 1)) -> Output(Vector[Float, 1](1)),
-                          Input(Vector[Float, 2](1, 0)) -> Output(Vector[Float, 1](1)),
-                          Input(Vector[Float, 2](1, 1)) -> Output(Vector[Float, 1](0)),
+    val data = Data[2, 1](Input(Vector[Float][2](0, 0)) -> Output(Vector[Float][1](0)),
+                          Input(Vector[Float][2](0, 1)) -> Output(Vector[Float][1](1)),
+                          Input(Vector[Float][2](1, 0)) -> Output(Vector[Float][1](1)),
+                          Input(Vector[Float][2](1, 1)) -> Output(Vector[Float][1](0)),
     )
 
     xor(data, 10000)
 
-    val answer00 = xor(Input(Vector[Float, 2](0, 0))).answer
-    val answer01 = xor(Input(Vector[Float, 2](0, 1))).answer
-    val answer10 = xor(Input(Vector[Float, 2](1, 0))).answer
-    val answer11 = xor(Input(Vector[Float, 2](1, 1))).answer
+    val answer00 = xor(Input(Vector[Float][2](0, 0))).answer
+    val answer01 = xor(Input(Vector[Float][2](0, 1))).answer
+    val answer10 = xor(Input(Vector[Float][2](1, 0))).answer
+    val answer11 = xor(Input(Vector[Float][2](1, 1))).answer
 
     assertEquals(answer00.truncate(2)(0), .00f)
     assertEquals(answer01.truncate(2)(0), .99f)

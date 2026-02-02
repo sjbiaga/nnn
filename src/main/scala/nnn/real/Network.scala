@@ -32,20 +32,20 @@ case class Network[
     for
       l <- cols.reverse
     do
-      r ::= Matrix[Real, N, N+1](layers(l).neurons.flatMap { it => Real(it.bias.toDouble) +: it.weights.to[Double].to[Real].toSeq }*)
+      r ::= Matrix[Real](layers(l).neurons.flatMap { it => Real(it.bias.toDouble) +: it.weights.to[Double].to[Real].toSeq }*)
     r
 
   /**
     * applies each neuron's activation function to each net output
     */
   def apply(l: Int, net: Vector[Real, N]): Vector[Real, N] =
-    Vector[Real, N]((layers(l).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
+    Vector[Real]((layers(l).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
 
   /**
     * applies each neuron's activation derivative function to each net output
     */
   def prime(l: Int, net: Vector[Real, N]): Vector[Real, N] =
-    Vector[Real, N]((layers(l).neurons.map(_.activation) zip net.toSeq).map(_.prime(_))*)
+    Vector[Real]((layers(l).neurons.map(_.activation) zip net.toSeq).map(_.prime(_))*)
 
   /**
     * train
@@ -64,7 +64,7 @@ case class Network[
 
       val weights = this()
 
-      var nabla = List.fill(cols.size)(Matrix.zero[Real, N, N+1])
+      var nabla = List.fill(cols.size)(Matrix[Real].zero[N, N+1])
 
       for
         (input, output) <- data.io
@@ -87,7 +87,7 @@ case class Network[
 
         total = total min loss.apply(output.answer, y)
 
-        var delta = Vector[Real, N](rows.map(loss.partial(output.answer, y)(_))*)
+        var delta = Vector[Real](rows.map(loss.partial(output.answer, y)(_))*)
                   ⊙ prime(L-1, net(L-1))
 
         // BACKPROPAGATION

@@ -40,21 +40,21 @@ case class Network[
       given Long = l.toLong
     do
       val ns = layers(l).neurons.flatMap { it => it.bias +: it.weights.toSeq }
-      r ::= Matrix[Float, N[given_Int.type], N[l.type]+1](ns*)
+      r ::= Matrix[Float][N[given_Int.type], N[l.type]+1](ns*)
     r
 
   /**
     * applies each neuron's activation function to each net output
     */
   def apply(using l: Int)(net: Vector[Float, N[l.type]]): Vector[Float, N[l.type]] =
-    Vector[Float, N[l.type]]((layers(l-1).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
+    Vector[Float]((layers(l-1).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
 
   /**
     * applies each neuron's activation derivative function to each net output
     */
   def prime(l: Int)(net: Vector[Float, N[l.type]]): Vector[Float, N[l.type]] =
     given Int = l
-    Vector[Float, N[l.type]]((layers(l-1).neurons.map(_.activation) zip net.toSeq).map(_.prime(_))*)
+    Vector[Float]((layers(l-1).neurons.map(_.activation) zip net.toSeq).map(_.prime(_))*)
 
   /**
     * train
@@ -80,7 +80,7 @@ case class Network[
         l = given_Int-1
         given Long = l.toLong
       do
-        nabla ::= Matrix.zero[Float, N[given_Int.type], N[l.type]+1]
+        nabla ::= Matrix[Float].zero[N[given_Int.type], N[l.type]+1]
 
       for
         (input, output) <- data.io
@@ -110,7 +110,7 @@ case class Network[
 
         var delta: Vector[Float, ?] = {
           given Int = L
-          Vector[Float, N[given_Int.type]](rows.map(loss.partial(output.answer, y)(_))*)
+          Vector[Float][N[given_Int.type]](rows.map(loss.partial(output.answer, y)(_))*)
         ⊙ prime(given_Int)(net(L-1).asInstanceOf[Vector[Float, N[given_Int.type]]])
         }
 

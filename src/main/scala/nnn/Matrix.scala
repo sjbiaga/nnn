@@ -29,7 +29,7 @@ case class Matrix[
 
   def apply(i: Int): Vector[A, N] =
     require(0 <= i && i < rows)
-    new Vector[A, N](underlying(i).toArray)
+    Vector[A, N](underlying(i).toArray)
 
   def apply[I <: Int: ValueOf](): Vector[A, N] =
     apply(valueOf[I])
@@ -60,7 +60,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i)(j) += fun(this.underlying(i)(j), that.underlying(i)(j))
-    new Matrix[A, M, N](result)
+    Matrix[A, M, N](result)
 
   /**
     * addition
@@ -79,7 +79,7 @@ case class Matrix[
       k <- 0 until this.cols
     do
       result(i)(j) += this.underlying(i)(k) * that.underlying(k)(j)
-    new Matrix[A, M, P](result)
+    Matrix[A, M, P](result)
 
   /**
     * element multiplication
@@ -97,7 +97,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i) += this.underlying(i)(j) * that.underlying(j)
-    new Vector[A, M](result)
+    Vector[A, M](result)
 
   /**
     * negation
@@ -115,7 +115,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i)(j) = fun(underlying(i)(j))
-    new Matrix[A, M, N](result)
+    Matrix[A, M, N](result)
 
   /**
     * transpose
@@ -127,7 +127,7 @@ case class Matrix[
       j <- 0 until rows
     do
       result(i)(j) = underlying(j)(i)
-    new Matrix[A, N, M](result)
+    Matrix[A, N, M](result)
 
   /**
     * unsafe assignment
@@ -156,7 +156,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i)(j) = c(underlying(i)(j))
-    new Matrix[B, M, N](result)
+    Matrix[B, M, N](result)
 
   def toSeq: Seq[Seq[A]] = underlying.map(_.toSeq).toSeq
 
@@ -167,55 +167,43 @@ object Matrix:
 
   given [A: Ring: ClassTag, N <: Int]: Conversion[Matrix[A, 1, N], Vector[A, N]] with
     def apply(self: Matrix[A, 1, N]): Vector[A, N] =
-      new Vector[A, N](self.underlying(0).toArray)
+      Vector[A, N](self.underlying(0).toArray)
 
-  def apply[A: Ring: ClassTag,
-            M <: Int: ValueOf,
-            N <: Int: ValueOf
-  ](elements: A*): Matrix[A, M, N] =
-    require(valueOf[M] > 0 && valueOf[N] > 0)
-    require(elements.size == valueOf[M] * valueOf[N])
+  def apply[A: Ring: ClassTag] = PartiallyAppliedOps[A]
 
-    new Matrix[A, M, N](elements.sliding(valueOf[N], valueOf[N]).map(_.toArray).toArray)
+  final class PartiallyAppliedOps[A: Ring: ClassTag]:
 
-  def one[A: Ring: ClassTag,
-          M <: Int: ValueOf,
-          N <: Int: ValueOf
-  ]: Matrix[A, M, N] =
-    require(valueOf[M] > 0 && valueOf[N] > 0)
+    def apply[M <: Int: ValueOf, N <: Int: ValueOf](elements: A*): Matrix[A, M, N] =
+      require(valueOf[M] > 0 && valueOf[N] > 0)
+      require(elements.size == valueOf[M] * valueOf[N])
 
-    Matrix[A, M, N](Seq.fill(valueOf[M] * valueOf[N])(Ring.one)*)
+      Matrix[A, M, N](elements.sliding(valueOf[N], valueOf[N]).map(_.toArray).toArray)
 
-  def zero[A: Ring: ClassTag,
-           M <: Int: ValueOf,
-           N <: Int: ValueOf
-  ]: Matrix[A, M, N] =
-    require(valueOf[M] > 0 && valueOf[N] > 0)
+    def one[M <: Int: ValueOf, N <: Int: ValueOf]: Matrix[A, M, N] =
+      require(valueOf[M] > 0 && valueOf[N] > 0)
 
-    Matrix[A, M, N](Seq.fill(valueOf[M] * valueOf[N])(Ring.zero)*)
+      apply[M, N](Seq.fill(valueOf[M] * valueOf[N])(Ring.one)*)
 
-  def constant[A: Ring: ClassTag,
-               M <: Int: ValueOf,
-               N <: Int: ValueOf
-  ](element: A): Matrix[A, M, N] =
-    require(valueOf[M] > 0 && valueOf[N] > 0)
+    def zero[M <: Int: ValueOf, N <: Int: ValueOf]: Matrix[A, M, N] =
+      require(valueOf[M] > 0 && valueOf[N] > 0)
 
-    Matrix[A, M, N](Seq.fill(valueOf[M] * valueOf[N])(element)*)
+      apply[M, N](Seq.fill(valueOf[M] * valueOf[N])(Ring.zero)*)
 
-  def diagonal[A: Ring: ClassTag,
-               N <: Int: ValueOf
-  ](element: A): Matrix[A, N, N] =
-    require(valueOf[N] > 0)
+    def constant[M <: Int: ValueOf, N <: Int: ValueOf](element: A): Matrix[A, M, N] =
+      require(valueOf[M] > 0 && valueOf[N] > 0)
 
-    val result = Array.fill(valueOf[N], valueOf[N])(Ring.zero)
+      apply[M, N](Seq.fill(valueOf[M] * valueOf[N])(element)*)
 
-    for
-      i <- 0 until valueOf[N]
-    do
-      result(i)(i) = element
+    def diagonal[N <: Int: ValueOf](element: A): Matrix[A, N, N] =
+      require(valueOf[N] > 0)
 
-    new Matrix[A, N, N](result)
+      val result = Array.fill(valueOf[N], valueOf[N])(Ring.zero)
 
-  def identity[A: Ring: ClassTag,
-               N <: Int: ValueOf
-  ]: Matrix[A, N, N] = diagonal[A, N](Ring.one)
+      for
+        i <- 0 until valueOf[N]
+      do
+        result(i)(i) = element
+
+      Matrix[A, N, N](result)
+
+    def identity[N <: Int: ValueOf]: Matrix[A, N, N] = diagonal[N](Ring.one)

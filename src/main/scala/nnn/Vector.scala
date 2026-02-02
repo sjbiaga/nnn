@@ -71,7 +71,7 @@ case class Vector[
       j <- 0 until that.rows
     do
       result(i)(j) = this.underlying(i) * that.underlying(j)
-    new Matrix[A, N, M](result)
+    Matrix[A, N, M](result)
 
   /**
     * element multiplication
@@ -94,13 +94,13 @@ case class Vector[
       k <- 0 until rows
     do
       result(k) = fun(underlying(k))
-    new Vector[A, N](result)
+    Vector[A, N](result)
 
   /**
     * transpose
     */
   def unary_~ : Matrix[A, 1, N] =
-    new Matrix[A, 1, N](Array(underlying.toArray))
+    Matrix[A, 1, N](Array(underlying.toArray))
 
   /**
     * unsafe assignment
@@ -130,7 +130,7 @@ case class Vector[
       k <- 0 until rows
     do
       result(k+1) = underlying(k)
-    new Vector[A, N+1](result)
+    Vector[A, N+1](result)
 
   /**
     * opposite of [[++]]
@@ -141,7 +141,7 @@ case class Vector[
       k <- 1 until rows
     do
       result(k-1) = underlying(k)
-    new Vector[A, N-1](result)
+    Vector[A, N-1](result)
 
 
   def to[B: Ring: ClassTag](using c: Conversion[A, B]): Vector[B, N] =
@@ -150,7 +150,7 @@ case class Vector[
       k <- 0 until rows
     do
       result(k) = c(underlying(k))
-    new Vector[B, N](result)
+    Vector[B, N](result)
 
   def toSeq: Seq[A] = underlying.toSeq
 
@@ -163,19 +163,19 @@ object Vector:
 
   given [A: Ring: ClassTag, N <: Int]: Conversion[Vector[A, N], Matrix[A, 1, N]] with
     def apply(self: Vector[A, N]): Matrix[A, 1, N] =
-      new Matrix[A, 1, N](Array(self.underlying.toArray))
+      Matrix[A, 1, N](Array(self.underlying.toArray))
 
-  def apply[A: Ring: ClassTag,
-            N <: Int: ValueOf
-  ](elements: A*): Vector[A, N] =
-    require(valueOf[N] > 0)
-    require(elements.size == valueOf[N])
+  def apply[A: Ring: ClassTag] = PartiallyAppliedOps[A]
 
-    new Vector[A, N](elements.toArray)
+  final class PartiallyAppliedOps[A: Ring: ClassTag]:
 
-  def zero[A: Ring: ClassTag,
-           N <: Int: ValueOf
-  ]: Vector[A, N] =
-    require(valueOf[N] > 0)
+    def apply[N <: Int: ValueOf](elements: A*): Vector[A, N] =
+      require(valueOf[N] > 0)
+      require(elements.size == valueOf[N])
 
-    Vector[A, N](Seq.fill(valueOf[N])(Ring[A].zero)*)
+      Vector[A, N](elements.toArray)
+
+    def zero[N <: Int: ValueOf]: Vector[A, N] =
+      require(valueOf[N] > 0)
+
+      apply[N](Seq.fill(valueOf[N])(Ring[A].zero)*)

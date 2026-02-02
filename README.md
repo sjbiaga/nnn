@@ -60,9 +60,9 @@ given List[Int] = 2 :: 10 :: 1 :: Nil
 Network[N, 2](loss = MSE[1](), learningRate = 3, ...)
 ```
 
-The higher-kinded type `N[_]` differs with the type argument: `N[0]` is the
-number of inputs, `N[1]` is the number of neurons in the hidden layer, while
-`N[2]` is the number of outputs. It is hence called a shape.
+Each type mapped by the higher-kinded type `N[_]` differs with the type argument:
+`N[0]` is the number of inputs, `N[1]` is the number of neurons in the hidden layer,
+while `N[2]` is the number of outputs. It is hence called a shape.
 
 The implicit `given_List_Int` is the shape as values. Both kinds of shape (types
 and values) must be given. The neural network is defined as `Network[N, 2](...)`,
