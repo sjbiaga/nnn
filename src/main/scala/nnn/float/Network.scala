@@ -18,11 +18,11 @@ case class Network[
   (using shape: List[Int]):
   require(valueOf[L] == layers.size)
 
-  // given_Int is the current layer (Lʹ) in which each neuron has shape(given_Long.toInt) weights (plus bias)
+  // given_Int is the current layer (L) in which each neuron has shape(given_Long.toInt) weights (plus bias)
+  protected implicit def _valueOf[L <: Int](using l: Int): ValueOf[N[L]] = ValueOf(shape(l).asInstanceOf[N[L]])
   // shape(given_Long.toInt) is the number of neurons in the previous layer (L)
-  // constantly given_Long.toInt == given_Int-1, although given_Int comes first and given_Long comes second
-  protected implicit def _valueOf[Lʹ <: Int](using lʹ: Int): ValueOf[N[Lʹ]] = ValueOf(shape(lʹ).asInstanceOf[N[Lʹ]])
   protected implicit def _valueOf1[L <: Int](using l: Long): ValueOf[N[L]+1] = ValueOf((shape(l.toInt)+1).asInstanceOf[N[L]+1])
+  // given_Long.toInt == given_Int-1, although given_Int comes first and given_Long comes second
 
   val L = valueOf[L]
 
@@ -35,13 +35,12 @@ case class Network[
   def apply(): List[Matrix[Float, ?, ?]] =
     var r = List[Matrix[Float, ?, ?]]()
     for
-      lʹ <- cols.reverse
-      given Int = lʹ
-      l = lʹ-1
+      given Int <- cols.reverse
+      l = given_Int-1
       given Long = l.toLong
     do
       val ns = layers(l).neurons.flatMap { it => it.bias +: it.weights.toSeq }
-      r ::= Matrix[Float, N[lʹ.type], N[l.type]+1](ns*)
+      r ::= Matrix[Float, N[given_Int.type], N[l.type]+1](ns*)
     r
 
   /**
@@ -77,12 +76,11 @@ case class Network[
       var nabla: List[Matrix[Float, ?, ?]] = Nil
 
       for
-        lʹ <- cols.reverse
-        given Int = lʹ
-        l = lʹ-1
+        given Int <- cols.reverse
+        l = given_Int-1
         given Long = l.toLong
       do
-        nabla ::= Matrix.zero[Float, N[lʹ.type], N[l.type]+1]
+        nabla ::= Matrix.zero[Float, N[given_Int.type], N[l.type]+1]
 
       for
         (input, output) <- data.io
@@ -143,7 +141,7 @@ case class Network[
           nabla(0) := ∇ + δ ⋅ x
         }
 
-      // UPDATE
+      // GRADIENT DESCENT
 
       for
         given Int <- cols
@@ -151,13 +149,14 @@ case class Network[
         given Long = l.toLong
       do
         val ∇ = nabla(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
-        val update = ∇.op(_ / data.io.size).op(-learningRate * _)
+        val update = ∇.op(-learningRate * _ / data.io.size)
 
         for
           n <- rows
+          update0 = update(n)(0)
+          update1 = update(n).--
         do
           val w = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]
-          val (update0, update1) = (update(n)(0), update(n).--)
           layers(l).neurons(n).bias += update0
           layers(l).neurons(n).weights := w + update1
 

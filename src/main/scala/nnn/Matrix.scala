@@ -71,7 +71,7 @@ case class Matrix[
   /**
     * multiplication
     */
-  def ⋅[P <: Int: ValueOf](that: Matrix[A, N, P]): Matrix[A, M, P] =
+  def ⋅[P <: Int](that: Matrix[A, N, P]): Matrix[A, M, P] =
     val result = Array.fill(this.rows, that.cols)(Ring[A].zero)
     for
       i <- 0 until this.rows
@@ -165,7 +165,7 @@ case class Matrix[
 
 object Matrix:
 
-  given [A: Ring: ClassTag, N <: Int: ValueOf]: Conversion[Matrix[A, 1, N], Vector[A, N]] with
+  given [A: Ring: ClassTag, N <: Int]: Conversion[Matrix[A, 1, N], Vector[A, N]] with
     def apply(self: Matrix[A, 1, N]): Vector[A, N] =
       new Vector[A, N](self.underlying(0).toArray)
 

@@ -1,7 +1,7 @@
 package nnn
 package float
 
-import spire.math.{ exp => _, * }
+import spire.math.{ exp => _, log => _, * }
 import spire.algebra.Ring
 import spire.implicits.*
 
@@ -11,6 +11,8 @@ object Util:
   def sigmoid(x: Float): Float = 1f / (1f + exp(-x))
 
   inline def exp(x: Float) = spire.math.exp[Float](x)
+
+  inline def log(x: Float) = spire.math.log[Float](x)
 
   inline def sqr[A: Ring](x: A) = x.pow(2)
 

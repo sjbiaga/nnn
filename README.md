@@ -1,8 +1,9 @@
-N-neurons Neural Networks
-=========================
+`N`-neurons Neural Networks
+===========================
 
-Simple neural networks with constant number `N` of neurons per each layer. The
-fixed `N` is actually part of the type of matrices and vectors.
+Simple neural networks with constant number `N` of neurons per each layer (when the
+fixed `N` is actually part of the type of matrices and vectors) or even differing
+between layers.
 
 The type `Matrix[A, M, N]` specifies that the matrix contains elements of type `A`,
 has `M` number of rows and `N` number of columns. `A` must have a `Ring` typeclass
@@ -17,8 +18,8 @@ can multiply a `Matrix[A, M, N]` and a `Matrix[A, N, P]`, yielding a `Matrix[A, 
 but one cannot multiply the former with a `Matrix[B, N, P]` or a `Matrix[A, P, Q]`,
 because `A` differs from `B`, respectively, `N` differs from `P`.
 
-N Neural Network
-----------------
+`N` Neural Network
+------------------
 
 A neural network `Network[N, N1]` is composed of `L`-layers each of `N` neurons,
 while `N1` corressponds to number `N` plus `1` (for the bias). For arbitrary

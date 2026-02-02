@@ -101,17 +101,18 @@ case class Network[
 
         nabla(0) += delta ⋅ out(0)
 
-      // UPDATE
+      // GRADIENT DESCENT
 
       for
         l <- cols
       do
-        val update = nabla(l).op(_ / data.io.size).op(-learningRate * _)
+        val update = nabla(l).op(-learningRate * _ / data.io.size)
 
         for
           n <- rows
+          update0 = update(n)(0)
+          update1 = update(n).--
         do
-          val (update0, update1) = (update(n)(0), update(n).--)
           layers(l).neurons(n).bias += update0
           layers(l).neurons(n).weights += update1
 

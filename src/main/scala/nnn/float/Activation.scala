@@ -3,7 +3,7 @@ package float
 
 import scala.Function.const
 
-import spire.math.{ exp => _, * }
+import spire.math.{ exp => _, log => _, * }
 import spire.algebra.*
 import spire.implicits.*
 
