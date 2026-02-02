@@ -15,14 +15,14 @@ class NetworkSuite extends FunSuite:
 
   test("NN https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example") {
 
-    val nn = Network[2, 3](
+    val nn = Network[2](
       loss = MSE[2](),
       learningRate = 0.5,
-      HiddenLayer[2](
+      Layer[2](
         Neuron[2](Vector[Double, 2](.15, .20), .35, Sigmoid),
         Neuron[2](Vector[Double, 2](.25, .30), .35, Sigmoid),
       ),
-      HiddenLayer[2](
+      Layer[2](
         Neuron[2](Vector[Double, 2](.40, .45), .60, Sigmoid),
         Neuron[2](Vector[Double, 2](.50, .55), .60, Sigmoid),
       )
@@ -48,10 +48,10 @@ class NetworkSuite extends FunSuite:
 
     def ng = rnd.nextGaussian
 
-    val xor = Network[10, 11](
+    val xor = Network[10](
       loss = MSE[10](),
       learningRate = 3,
-      HiddenLayer[10](
+      Layer[10](
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
@@ -63,7 +63,7 @@ class NetworkSuite extends FunSuite:
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
       ),
-      HiddenLayer[10](
+      Layer[10](
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
         Neuron[10](Vector[Double, 10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
@@ -90,9 +90,9 @@ class NetworkSuite extends FunSuite:
     val answer10 = xor(Input(Vector[Double, 10](1, 0, 0, 0, 0, 0, 0, 0, 0, 0))).answer
     val answer11 = xor(Input(Vector[Double, 10](1, 1, 0, 0, 0, 0, 0, 0, 0, 0))).answer
 
-    assertEquals(answer00.truncate(1)(0), .0)
-    assertEquals(answer01.truncate(1)(0), .9)
-    assertEquals(answer10.truncate(1)(0), .9)
-    assertEquals(answer11.truncate(1)(0), .0)
+    assertEquals(answer00.truncate(1)(0), .0d)
+    assertEquals(answer01.truncate(1)(0), .9d)
+    assertEquals(answer10.truncate(1)(0), .9d)
+    assertEquals(answer11.truncate(1)(0), .0d)
 
   }

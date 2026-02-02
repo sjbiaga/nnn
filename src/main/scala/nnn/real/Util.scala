@@ -8,9 +8,9 @@ import spire.implicits.*
 
 object Util:
 
-  def sigmoid(x: Real) = Real(1) / (Real(1) + exp(-x))
+  def sigmoid(x: Real): Real = Real(1) / (Real(1) + exp(-x))
 
-  inline def sqr[A: Ring](x: A) = x.pow(2)
+  inline def sqr[A: Ring](x: A): A = x.pow(2)
 
   given [N: Numeric]: Conversion[N, Real] with
     def apply(self: N): Real = self match

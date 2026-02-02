@@ -16,14 +16,14 @@ class NetworkSuite extends FunSuite:
 
   test("NN https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example") {
 
-    val nn = Network[2, 3](
+    val nn = Network[2](
       loss = MSE[2](),
       learningRate = 0.5,
-      HiddenLayer[2](
+      Layer[2](
         Neuron[2](Vector[Real, 2](.15, .20), .35, Sigmoid),
         Neuron[2](Vector[Real, 2](.25, .30), .35, Sigmoid),
       ),
-      HiddenLayer[2](
+      Layer[2](
         Neuron[2](Vector[Real, 2](.40, .45), .60, Sigmoid),
         Neuron[2](Vector[Real, 2](.50, .55), .60, Sigmoid),
       )

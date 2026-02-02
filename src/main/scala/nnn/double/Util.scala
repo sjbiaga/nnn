@@ -8,9 +8,9 @@ import spire.implicits.*
 
 object Util:
 
-  def sigmoid(x: Double) = 1d / (1d + exp(-x))
+  def sigmoid(x: Double): Double = 1d / (1d + exp(-x))
 
-  inline def sqr[A: Ring](x: A) = x.pow(2)
+  inline def sqr[A: Ring](x: A): A = x.pow(2)
 
   given [N: Numeric]: Conversion[N, Double] with
     def apply(self: N): Double = self match
@@ -25,4 +25,4 @@ object Util:
 
   extension [N <: Int: ValueOf](self: Vector[Double, N])
     def truncate(n: Int): Vector[Double, N] =
-      self.op { it => (it * 10.pow(n)).toInt.toDouble / 10.pow(n) }
+      self.op { it => (it * 10d.pow(n)).toInt.toDouble / 10d.pow(n) }

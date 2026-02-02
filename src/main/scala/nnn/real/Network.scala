@@ -1,6 +1,8 @@
 package nnn
 package real
 
+import scala.compiletime.ops.int.+
+
 import spire.math.Real
 import spire.implicits.*
 
@@ -9,28 +11,28 @@ import Network.*
 
 
 case class Network[
-  N <: Int: ValueOf,
-  N1 <: Int: ValueOf
+  N <: Int: ValueOf
 ](loss: Loss[N],
   learningRate: Real,
-  layers: HiddenLayer[N]*):
-  require(valueOf[N1] == 1+valueOf[N])
+  layers: Layer[N]*):
+
+  protected given ValueOf[N+1] = ValueOf[N+1]((valueOf[N]+1).asInstanceOf[N+1])
 
   val N = valueOf[N]
   val L = layers.size
 
-  def rows = 0 until N
-  def cols = 0 until L
+  val rows = 0 until N
+  val cols = 0 until L
 
   /**
     * (bias and) weights matrices
     */
-  def apply(): List[Matrix[Real, N, N1]] =
-    var r = List[Matrix[Real, N, N1]]()
+  def apply(): List[Matrix[Real, N, N+1]] =
+    var r = List[Matrix[Real, N, N+1]]()
     for
       l <- cols.reverse
     do
-      r ::= Matrix[Real, N, N1](layers(l).neurons.flatMap { it => Real(it.bias.toDouble) +: it.weights.to[Double].to[Real].toSeq }*)
+      r ::= Matrix[Real, N, N+1](layers(l).neurons.flatMap { it => Real(it.bias.toDouble) +: it.weights.to[Double].to[Real].toSeq }*)
     r
 
   /**
@@ -62,13 +64,13 @@ case class Network[
 
       val weights = this()
 
-      var nabla = List.fill(cols.size)(Matrix.zero[Real, N, N1])
+      var nabla = List.fill(cols.size)(Matrix.zero[Real, N, N+1])
 
       for
-        io <- data.io
+        (input, output) <- data.io
       do
         var net = List[Vector[Real, N]]()
-        var out = List(io._1.data.++[N1](1))
+        var out = List(input.data.++(1))
 
         // FORWARD PASS
 
@@ -81,9 +83,11 @@ case class Network[
         net = net.reverse
         out = out.reverse
 
-        total = total min loss.apply(io._2.answer, out(L).--)
+        val y = out(L).--
 
-        var delta = Vector[Real, N](rows.map(loss.partial(io._2.answer, out(L).--)(_))*)
+        total = total min loss.apply(output.answer, y)
+
+        var delta = Vector[Real, N](rows.map(loss.partial(output.answer, y)(_))*)
                   ⊙ prime(L-1, net(L-1))
 
         // BACKPROPAGATION
@@ -105,11 +109,11 @@ case class Network[
         val update = nabla(l).op(_ / data.io.size).op(-learningRate * _)
 
         for
-          i <- rows
+          n <- rows
         do
-          val (update0, update1) = (update(i)(0), update(i).--[N])
-          layers(l).neurons(i).bias += update0
-          layers(l).neurons(i).weights += update1
+          val (update0, update1) = (update(n)(0), update(n).--)
+          layers(l).neurons(n).bias += update0
+          layers(l).neurons(n).weights += update1
 
     count -> total
 
@@ -119,37 +123,27 @@ case class Network[
   def apply(input: Input[N]): Output[N] =
     val weights = this()
 
-    var out = input.data.++[N1](1)
+    var out = input.data.++(1)
 
     for
       l <- cols
     do
-      out = apply(l, weights(l) ⋅ out).++[N1](1)
+      out = apply(l, weights(l) ⋅ out).++(1)
 
-    Output(out.--[N])
+    Output(out.--)
 
 
 object Network:
 
-  case class Input[
-    N <: Int: ValueOf
-  ](data: Vector[Real, N])
+  case class Input[N <: Int](data: Vector[Real, N])
 
-  case class Output[
-    N <: Int: ValueOf
-  ](answer: Vector[Real, N])
+  case class Output[N <: Int](answer: Vector[Real, N])
 
-  case class Data[
-    N <: Int: ValueOf
-  ](io: (Input[N], Output[N])*)
+  case class Data[N <: Int](io: (Input[N], Output[N])*)
 
-  case class Neuron[
-    N <: Int: ValueOf
-  ](weights: Vector[Real, N],
-    var bias: Real,
-    activation: Activation)
+  case class Neuron[N <: Int](weights: Vector[Real, N],
+                              var bias: Real,
+                              activation: Activation)
 
-  case class HiddenLayer[
-    N <: Int: ValueOf
-  ](neurons: Neuron[N]*):
+  case class Layer[N <: Int](neurons: Neuron[N]*):
     require(neurons.nonEmpty)

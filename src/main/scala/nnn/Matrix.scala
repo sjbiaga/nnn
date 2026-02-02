@@ -8,11 +8,9 @@ import spire.implicits.*
 
 case class Matrix[
   A: Ring: ClassTag,
-  M <: Int: ValueOf,
-  N <: Int: ValueOf
-](private[nnn] val underlying: Array[Array[A]]):
-  require(valueOf[M] > 0 && valueOf[N] > 0)
-  require(underlying.length == valueOf[M] && underlying.forall(_.length == valueOf[N]))
+  M <: Int,
+  N <: Int
+](underlying: Array[Array[A]]):
 
   override def equals(any: Any): Boolean = any match
     case that: Matrix[?, ?, ?] if this.rows == that.rows && this.cols == that.cols =>
@@ -26,12 +24,12 @@ case class Matrix[
       b
     case _ => false
 
-  val rows = valueOf[M]
-  val cols = valueOf[N]
+  val rows = underlying.size
+  val cols = underlying(0).size
 
   def apply(i: Int): Vector[A, N] =
     require(0 <= i && i < rows)
-    Vector[A, N](underlying(i).toArray)
+    new Vector[A, N](underlying(i).toArray)
 
   def apply[I <: Int: ValueOf](): Vector[A, N] =
     apply(valueOf[I])
@@ -62,7 +60,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i)(j) += fun(this.underlying(i)(j), that.underlying(i)(j))
-    Matrix[A, M, N](result)
+    new Matrix[A, M, N](result)
 
   /**
     * addition
@@ -81,7 +79,7 @@ case class Matrix[
       k <- 0 until this.cols
     do
       result(i)(j) += this.underlying(i)(k) * that.underlying(k)(j)
-    Matrix[A, M, P](result)
+    new Matrix[A, M, P](result)
 
   /**
     * element multiplication
@@ -99,7 +97,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i) += this.underlying(i)(j) * that.underlying(j)
-    Vector[A, M](result)
+    new Vector[A, M](result)
 
   /**
     * negation
@@ -117,7 +115,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i)(j) = fun(underlying(i)(j))
-    Matrix[A, M, N](result)
+    new Matrix[A, M, N](result)
 
   /**
     * transpose
@@ -129,7 +127,17 @@ case class Matrix[
       j <- 0 until rows
     do
       result(i)(j) = underlying(j)(i)
-    Matrix[A, N, M](result)
+    new Matrix[A, N, M](result)
+
+  /**
+    * unsafe assignment
+    */
+  def :=(that: Matrix[A, ?, ?]): Unit =
+    for
+      i <- 0 until rows
+      j <- 0 until cols
+    do
+      this.underlying(i)(j) = that.underlying(i)(j)
 
   /**
     * addition and reassignment
@@ -148,7 +156,7 @@ case class Matrix[
       j <- 0 until cols
     do
       result(i)(j) = c(underlying(i)(j))
-    Matrix[B, M, N](result)
+    new Matrix[B, M, N](result)
 
   def toSeq: Seq[Seq[A]] = underlying.map(_.toSeq).toSeq
 
@@ -159,7 +167,7 @@ object Matrix:
 
   given [A: Ring: ClassTag, N <: Int: ValueOf]: Conversion[Matrix[A, 1, N], Vector[A, N]] with
     def apply(self: Matrix[A, 1, N]): Vector[A, N] =
-      Vector[A, N](self.underlying(0).toArray)
+      new Vector[A, N](self.underlying(0).toArray)
 
   def apply[A: Ring: ClassTag,
             M <: Int: ValueOf,
@@ -168,7 +176,7 @@ object Matrix:
     require(valueOf[M] > 0 && valueOf[N] > 0)
     require(elements.size == valueOf[M] * valueOf[N])
 
-    Matrix[A, M, N](elements.sliding(valueOf[N], valueOf[N]).map(_.toArray).toArray)
+    new Matrix[A, M, N](elements.sliding(valueOf[N], valueOf[N]).map(_.toArray).toArray)
 
   def one[A: Ring: ClassTag,
           M <: Int: ValueOf,
@@ -206,7 +214,7 @@ object Matrix:
     do
       result(i)(i) = element
 
-    Matrix[A, N, N](result)
+    new Matrix[A, N, N](result)
 
   def identity[A: Ring: ClassTag,
                N <: Int: ValueOf

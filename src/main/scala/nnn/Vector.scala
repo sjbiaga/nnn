@@ -1,5 +1,7 @@
 package nnn
 
+import scala.compiletime.ops.int.{ +, - }
+
 import scala.reflect.ClassTag
 
 import spire.algebra.Ring
@@ -10,10 +12,8 @@ import Vector.given
 
 case class Vector[
   A: Ring: ClassTag,
-  N <: Int: ValueOf
-](private[nnn] val underlying: Array[A]):
-  require(valueOf[N] > 0)
-  require(underlying.length == valueOf[N])
+  N <: Int
+](underlying: Array[A]):
 
   override def equals(any: Any): Boolean = any match
     case that: Vector[?, ?] if this.rows == that.rows =>
@@ -26,7 +26,7 @@ case class Vector[
       b
     case _ => false
 
-  val rows = valueOf[N]
+  val rows = underlying.size
 
   def apply(i: Int): A =
     require(0 <= i && i < rows)
@@ -64,14 +64,14 @@ case class Vector[
   /**
     * multiplication
     */
-  def ⋅[M <: Int: ValueOf](that: Vector[A, M]): Matrix[A, N, M] =
+  def ⋅[M <: Int](that: Vector[A, M]): Matrix[A, N, M] =
     val result = Array.fill(this.rows, that.rows)(Ring[A].zero)
     for
       i <- 0 until this.rows
-      j <- 0 until that.cols
+      j <- 0 until that.rows
     do
       result(i)(j) = this.underlying(i) * that.underlying(j)
-    Matrix[A, N, M](result)
+    new Matrix[A, N, M](result)
 
   /**
     * element multiplication
@@ -94,13 +94,22 @@ case class Vector[
       k <- 0 until rows
     do
       result(k) = fun(underlying(k))
-    Vector[A, N](result)
+    new Vector[A, N](result)
 
   /**
     * transpose
     */
   def unary_~ : Matrix[A, 1, N] =
-    Matrix[A, 1, N](Array(underlying.toArray))
+    new Matrix[A, 1, N](Array(underlying.toArray))
+
+  /**
+    * unsafe assignment
+    */
+  def :=(that: Vector[A, ?]): Unit =
+    for
+      k <- 0 until rows
+    do
+      this.underlying(k) = that.underlying(k)
 
   /**
     * addition and reassignment
@@ -114,27 +123,25 @@ case class Vector[
   /**
     * opposite of [[--]]
     */
-  def ++[N1 <: Int: ValueOf](it: A = Ring[A].zero): Vector[A, N1] =
-    require(valueOf[N1] == rows+1)
+  def ++(it: A = Ring[A].zero): Vector[A, N+1] =
     val result = Array.fill(rows+1)(Ring[A].zero)
     result(0) = it
     for
       k <- 0 until rows
     do
       result(k+1) = underlying(k)
-    Vector[A, N1](result)
+    new Vector[A, N+1](result)
 
   /**
     * opposite of [[++]]
     */
-  def --[N1 <: Int: ValueOf]: Vector[A, N1] =
-    require(valueOf[N1] == rows-1)
+  def -- : Vector[A, N-1] =
     val result = Array.fill(rows-1)(Ring[A].zero)
     for
       k <- 1 until rows
     do
       result(k-1) = underlying(k)
-    Vector[A, N1](result)
+    new Vector[A, N-1](result)
 
 
   def to[B: Ring: ClassTag](using c: Conversion[A, B]): Vector[B, N] =
@@ -143,7 +150,7 @@ case class Vector[
       k <- 0 until rows
     do
       result(k) = c(underlying(k))
-    Vector[B, N](result)
+    new Vector[B, N](result)
 
   def toSeq: Seq[A] = underlying.toSeq
 
@@ -152,9 +159,11 @@ case class Vector[
 
 object Vector:
 
-  given [A: Ring: ClassTag, N <: Int: ValueOf]: Conversion[Vector[A, N], Matrix[A, 1, N]] with
+  given [A: Ring, N <: Int]: Conversion[Vector[A, N+1-1], Vector[A, N]] = _.asInstanceOf[Vector[A, N]]
+
+  given [A: Ring: ClassTag, N <: Int]: Conversion[Vector[A, N], Matrix[A, 1, N]] with
     def apply(self: Vector[A, N]): Matrix[A, 1, N] =
-      Matrix[A, 1, N](Array(self.underlying.toArray))
+      new Matrix[A, 1, N](Array(self.underlying.toArray))
 
   def apply[A: Ring: ClassTag,
             N <: Int: ValueOf
@@ -162,10 +171,11 @@ object Vector:
     require(valueOf[N] > 0)
     require(elements.size == valueOf[N])
 
-    Vector[A, N](elements.toArray)
+    new Vector[A, N](elements.toArray)
 
   def zero[A: Ring: ClassTag,
            N <: Int: ValueOf
   ]: Vector[A, N] =
     require(valueOf[N] > 0)
+
     Vector[A, N](Seq.fill(valueOf[N])(Ring[A].zero)*)
