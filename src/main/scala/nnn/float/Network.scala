@@ -3,7 +3,7 @@ package float
 
 import scala.compiletime.ops.int.+
 
-import spire.implicits.*
+import spire.implicits.FloatAlgebra
 
 import Util.given
 import Network.*

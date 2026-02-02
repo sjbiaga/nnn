@@ -16,7 +16,7 @@ import Util.*
 enum Activation(val apply: Float => Float,
                 val prime: Float => Float):
 
-  case Linear extends Activation(identity, const(1))
+  case Linear(α: Float = 1) extends Activation(x => α*x, const(α))
 
   case Sign extends Activation(signum, const(0))
 
@@ -26,8 +26,10 @@ enum Activation(val apply: Float => Float,
 
   case ReLU extends Activation(0 max _, x => if x <= 0 then 0 else 1)
 
+  case ReLU6 extends Activation(1 max _ min 6, x => if x <= 0 || x > 6 then 0 else 1)
+
   case LeakyReLU(α: Float = 0.01) extends Activation(x => if x <= 0 then α*x else x,
-                                                      x => if x <= 0 then α else 1)
+                                                     x => if x <= 0 then α else 1)
 
   case SiLU extends Activation(x => x * sigmoid(x), x => { val e = exp(-x); (1+e+x*e)/sqr(1+e) })
 
@@ -36,7 +38,7 @@ enum Activation(val apply: Float => Float,
   case Softplus extends Activation(x => log(1+exp(x)), sigmoid)
 
   case ELU(α: Float = 1) extends Activation(x => if x <= 0 then α*(exp(x)-1) else x,
-                                             x => if x <= 0 then α*exp(x) else 1)
+                                            x => if x <= 0 then α*exp(x) else 1)
 
   case ELiSH extends Activation(x => (if x < 0 then exp(x)-1 else x) * sigmoid(x),
                                 x => (if x < 0 then 2*exp(2*x)+exp(3*x)-exp(x)

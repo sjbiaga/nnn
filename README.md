@@ -63,10 +63,11 @@ The higher-kinded type `N[_]` differs with the type argument: `N[0]` is the
 number of inputs, `N[1]` is the number of neurons in the hidden layer, while
 `N[2]` is the number of outputs. It is hence called a shape.
 
-The implicit `given_List_Int` is the shape as values. Both shapes (types and
-values) must be given. The neural network is then defined as `Network[N, 2](...)`,
-where `N` is the shape and `2` is the number of hidden layers. Then `1` occuring
-in the argument `loss = MSE[1]()` is the number of neurons in the output layer.
+The implicit `given_List_Int` is the shape as values. Both kinds of shape (types
+and values) must be given. The neural network is defined as `Network[N, 2](...)`,
+where `N` is the shape and `2` is the number of hidden layers, while the (values)
+shape is passed as implicit parameter. Then, `1` occuring in the argument
+`loss = MSE[1]()` is the same number of neurons in the output layer.
 
 Note that the output layer is also considered a hidden layer.
 

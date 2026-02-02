@@ -1,7 +1,7 @@
 package nnn
 package float
 
-import spire.math.*
+import spire.math.{ exp => _, * }
 import spire.algebra.Ring
 import spire.implicits.*
 

@@ -3,7 +3,7 @@ package double
 
 import scala.compiletime.ops.int.+
 
-import spire.implicits.*
+import spire.implicits.DoubleAlgebra
 
 import Util.given
 import Network.*

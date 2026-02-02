@@ -16,7 +16,7 @@ import Util.*
 enum Activation(val apply: Double => Double,
                 val prime: Double => Double):
 
-  case Linear extends Activation(identity, const(1))
+  case Linear(α: Double = 1) extends Activation(x => α*x, const(α))
 
   case Sign extends Activation(signum, const(0))
 
@@ -25,6 +25,8 @@ enum Activation(val apply: Double => Double,
   case Tanh extends Activation(tanh, x => { val o = tanh(x); 1-sqr(o) })
 
   case ReLU extends Activation(0 max _, x => if x <= 0 then 0 else 1)
+
+  case ReLU6 extends Activation(1 max _ min 6, x => if x < 0 || x > 6 then 0 else 1)
 
   case LeakyReLU(α: Double = 0.01) extends Activation(x => if x <= 0 then α*x else x,
                                                       x => if x <= 0 then α else 1)
