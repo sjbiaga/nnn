@@ -220,7 +220,7 @@ the following equations hold:
 ```
 
 We note that $\frac{\partial{L}}{\partial{y_i}} \times \phi_{i3}'(a_{i3})$,
-where $i = \overline{1 \dots 3}$, occurs repeatedly: we may thus introduce
+where $i = \overline{1 \dots 3}$, occur repeatedly: we may thus introduce
 the following matrix named $\delta$ (using the Hadamard product $\odot$):
 
 ```math
@@ -253,19 +253,13 @@ partial derivatives of $L$ with respect to the weights on the $3^{rd}$ layer):
 \\
 \frac{\partial{L}}{\partial{w_{33}^0}} & \frac{\partial{L}}{\partial{w_{33}^1}} & \frac{\partial{L}}{\partial{w_{33}^2}} & \frac{\partial{L}}{\partial{w_{33}^3}}
 \end{pmatrix} =
-\delta^{T} \cdot
+\delta \cdot
 \begin{pmatrix}
-1 \\
-\\
-h_{12} \\
-\\
-h_{22} \\
-\\
-h_{32}
+1 & h_{12} & h_{22} & h_{32}
 \end{pmatrix}
 ```
 
-Let us now write the nine partial derivatives of $L$ with respect to the weights
+Let us now write the twelve partial derivatives of $L$ with respect to the weights
 on the $2^{nd}$ layer, each equation being a sum of three terms:
 
 ```math
@@ -409,14 +403,8 @@ partial derivatives of $L$ with respect to the weights on the $2^{nd}$ layer):
 \\
 \frac{\partial{L}}{\partial{w_{32}^0}} & \frac{\partial{L}}{\partial{w_{32}^1}} & \frac{\partial{L}}{\partial{w_{32}^2}} & \frac{\partial{L}}{\partial{w_{32}^3}}
 \end{pmatrix} =
-\delta^{T} \cdot
+\delta \cdot
 \begin{pmatrix}
-1 \\
-\\
-h_{11} \\
-\\
-h_{21} \\
-\\
-h_{31} \\
+1 & h_{11} & h_{21} & h_{31}
 \end{pmatrix}
 ```
