@@ -334,8 +334,8 @@ w_{13}^3 & w_{23}^3 & w_{33}^3 \\
 \end{pmatrix}
 ```
 
-Let us further drop the first row in the above matrix (denoting this transient
-matrix by ${\left( {W^{(3)}}^T \cdot \delta \right)}^*$):
+Let us further drop the first row (because it is not used) in the above matrix
+(denoting this transient matrix by ${\left( {W^{(3)}}^T \cdot \delta \right)}^*$):
 
 ```math
 {\left( {W^{(3)}}^T \cdot \delta \right)}^* =
@@ -407,4 +407,87 @@ partial derivatives of $L$ with respect to the weights on the $2^{nd}$ layer):
 \begin{pmatrix}
 1 & h_{11} & h_{21} & h_{31}
 \end{pmatrix}
+```
+
+In order to compute the partial derivatives of the loss function $L$ with respect
+to the weights of the first neuron in the first hidden layer, the following are
+the nine _paths_ that enter the calculation; three for the $y_1$ output:
+
+```math
+\begin{align*}
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{12} {\phi_{12} \atop \longrightarrow}h_{12} & \longrightarrow & a_{13} {\phi_{13} \atop \longrightarrow} y_1 \\
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{22} {\phi_{22} \atop \longrightarrow}h_{22} & \longrightarrow & a_{13} {\phi_{13} \atop \longrightarrow} y_1 \\
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{32} {\phi_{32} \atop \longrightarrow}h_{32} & \longrightarrow & a_{13} {\phi_{13} \atop \longrightarrow} y_1 \\
+\end{align*}
+```
+
+three for the $y_2$ output:
+
+```math
+\begin{align*}
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{12} {\phi_{12} \atop \longrightarrow}h_{12} & \longrightarrow & a_{23} {\phi_{23} \atop \longrightarrow} y_2 \\
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{22} {\phi_{22} \atop \longrightarrow}h_{22} & \longrightarrow & a_{23} {\phi_{23} \atop \longrightarrow} y_2 \\
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{32} {\phi_{32} \atop \longrightarrow}h_{32} & \longrightarrow & a_{23} {\phi_{23} \atop \longrightarrow} y_2 \\
+\end{align*}
+```
+and three for the $y_3$ output:
+
+```math
+\begin{align*}
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{12} {\phi_{12} \atop \longrightarrow}h_{12} & \longrightarrow & a_{33} {\phi_{33} \atop \longrightarrow} y_3 \\
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{22} {\phi_{22} \atop \longrightarrow}h_{22} & \longrightarrow & a_{33} {\phi_{33} \atop \longrightarrow} y_3 \\
+a_{11} {\phi_{11} \atop \longrightarrow} h_{11} & \longrightarrow & a_{32} {\phi_{32} \atop \longrightarrow}h_{32} & \longrightarrow & a_{33} {\phi_{33} \atop \longrightarrow} y_3 \\
+\end{align*}
+```
+
+There are nine other computation paths for the weights of the second neuron, and
+nine other paths for the weights of the third neuron (in the first hidden layer).
+
+We shall further illustrate the computations only for the $k^{th}$ weight of the
+_first_ neuron (in the _first_ hidden layer), where $k = \overline{0 \dots 3}$:
+
+```math
+\begin{align*}
+\frac{\partial{L}}{\partial{w_{11}^k}} & = \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{12}}} \times \frac{\partial{h_{12}}}{\partial{\phi_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{22}}} \times \frac{\partial{h_{22}}}{\partial{\phi_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{32}}} \times \frac{\partial{h_{32}}}{\partial{\phi_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{12}}} \times \frac{\partial{h_{12}}}{\partial{\phi_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{22}}} \times \frac{\partial{h_{22}}}{\partial{\phi_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{32}}} \times \frac{\partial{h_{32}}}{\partial{\phi_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_3}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{12}}} \times \frac{\partial{h_{12}}}{\partial{\phi_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{22}}} \times \frac{\partial{h_{22}}}{\partial{\phi_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_3}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{32}}} \times \frac{\partial{h_{32}}}{\partial{\phi_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
 ```
