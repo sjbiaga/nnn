@@ -205,8 +205,16 @@ the following equations hold:
 
 ```math
 \begin{align*}
-\frac{\partial{L}}{\partial{w_{13}^0}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times 1 & & \frac{\partial{L}}{\partial{w_{13}^1}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{13}^2}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{13}^3}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{32} \\
-\frac{\partial{L}}{\partial{w_{23}^0}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times 1 & & \frac{\partial{L}}{\partial{w_{23}^1}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{23}^2}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{23}^3}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{32} \\
+\frac{\partial{L}}{\partial{w_{13}^0}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times 1 & & \frac{\partial{L}}{\partial{w_{13}^1}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{13}^2}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{13}^3}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{32}
+\end{align*}
+```
+```math
+\begin{align*}
+\frac{\partial{L}}{\partial{w_{23}^0}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times 1 & & \frac{\partial{L}}{\partial{w_{23}^1}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{23}^2}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{23}^3}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{32}
+\end{align*}
+```
+```math
+\begin{align*}
 \frac{\partial{L}}{\partial{w_{33}^0}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times 1 & & \frac{\partial{L}}{\partial{w_{33}^1}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{33}^2}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{33}^3}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{32}
 \end{align*}
 ```
@@ -253,7 +261,7 @@ h_{12} \\
 \\
 h_{22} \\
 \\
-h_{32} \\
+h_{32}
 \end{pmatrix}
 ```
 
@@ -263,17 +271,37 @@ on the $2^{nd}$ layer, each equation being a sum of three terms:
 ```math
 \begin{align}
 \frac{\partial{L}}{\partial{w_{12}^0}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times 1 & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times 1 & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times 1 \\
-\frac{\partial{L}}{\partial{w_{12}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{11} \\
+\frac{\partial{L}}{\partial{w_{12}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{11}
+\end{align}
+```
+```math
+\begin{align}
 \frac{\partial{L}}{\partial{w_{12}^2}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{21} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{21} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{21} \\
-\frac{\partial{L}}{\partial{w_{12}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{31} \\
+\frac{\partial{L}}{\partial{w_{12}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{31}
+\end{align}
+```
+```math
+\begin{align}
 \frac{\partial{L}}{\partial{w_{22}^0}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times 1 & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times 1 & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times 1 \\
-\frac{\partial{L}}{\partial{w_{22}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{11} \\
+\frac{\partial{L}}{\partial{w_{22}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{11}
+\end{align}
+```
+```math
+\begin{align}
 \frac{\partial{L}}{\partial{w_{22}^2}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{21} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{21} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{21} \\
-\frac{\partial{L}}{\partial{w_{22}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{31} \\
+\frac{\partial{L}}{\partial{w_{22}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{31}
+\end{align}
+```
+```math
+\begin{align}
 \frac{\partial{L}}{\partial{w_{32}^0}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times 1 & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times 1 & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times 1 \\
-\frac{\partial{L}}{\partial{w_{32}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{11} \\
+\frac{\partial{L}}{\partial{w_{32}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{11}
+\end{align}
+```
+```math
+\begin{align}
 \frac{\partial{L}}{\partial{w_{32}^2}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{21} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{21} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{21} \\
-\frac{\partial{L}}{\partial{w_{32}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{31} \\
+\frac{\partial{L}}{\partial{w_{32}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{31}
 \end{align}
 ```
 
@@ -298,6 +326,9 @@ w_{13}^3 & w_{23}^3 & w_{33}^3 \\
 \\
 \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33})
 \end{pmatrix} =
+```
+```math
+=
 \begin{pmatrix}
 \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^0 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^0 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^0 \\
 \\
@@ -310,7 +341,7 @@ w_{13}^3 & w_{23}^3 & w_{33}^3 \\
 ```
 
 Let us further drop the first row in the above matrix (denoting this transient
-matrix by ${\left( {W^{(3)}}^T \cdot \delta \right)}^*$):
+matrix with $*$ by ${\left( {W^{(3)}}^T \cdot \delta \right)}^*$):
 
 ```math
 {\left( {W^{(3)}}^T \cdot \delta \right)}^* =
