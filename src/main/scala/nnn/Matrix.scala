@@ -1,8 +1,11 @@
 package nnn
 
+import scala.compiletime.ops.int.{ +, -, /, * }
+
+import scala.math.Ordering.Implicits.*
 import scala.reflect.ClassTag
 
-import spire.algebra.Ring
+import spire.algebra.{ Field, Ring }
 import spire.implicits.*
 
 
@@ -10,7 +13,7 @@ case class Matrix[
   A: Ring: ClassTag,
   M <: Int,
   N <: Int
-](underlying: Array[Array[A]]):
+](underlying: Array[Array[A]]) { self =>
 
   override def equals(any: Any): Boolean = any match
     case that: Matrix[?, ?, ?] if this.rows == that.rows && this.cols == that.cols =>
@@ -130,6 +133,129 @@ case class Matrix[
     Matrix[A, N, M](result)
 
   /**
+    * cross-correlation
+    */
+  def ⋆[P <: Int, Q <: Int](that: Matrix[A, P, Q]): Matrix[A, M-P+1, N-Q+1] =
+    require(that.rows <= this.rows && that.cols <= this.cols)
+    val result = Array.fill(this.rows-that.rows+1, this.cols-that.cols+1)(Ring[A].zero)
+    for
+      i <- 0 until this.rows-that.rows+1
+      j <- 0 until this.cols-that.cols+1
+      k <- 0 until that.rows
+      l <- 0 until that.cols
+    do
+      result(i)(j) += this.underlying(i+k)(j+l) * that.underlying(k)(l)
+    Matrix[A, M-P+1, N-Q+1](result)
+
+  /**
+    * 180° rotation
+    */
+  def unary_! : Matrix[A, M, N] =
+    val result = Array.fill(rows, cols)(Ring[A].zero)
+    for
+      i <- 0 until rows
+      j <- 0 until cols
+    do
+      result(i)(j) = underlying(rows-i-1)(cols-j-1)
+    Matrix[A, M, N](result)
+
+  /**
+    * convolution
+    */
+  def ∗[P <: Int, Q <: Int](that: Matrix[A, P, Q]): Matrix[A, M-P+1, N-Q+1] =
+    this ⋆ !that
+
+  /**
+    * max-pooling
+    */
+  def max[P <: Int: ValueOf, Q <: Int: ValueOf](min: A)(using Ordering[A]): Matrix[A, M-P+1, N-Q+1] =
+    val rows = valueOf[P]
+    val cols = valueOf[Q]
+    require(rows <= this.rows && cols <= this.cols)
+    val result = Array.fill(this.rows-rows+1, this.cols-cols+1)(min)
+    for
+      i <- 0 until this.rows-rows+1
+      j <- 0 until this.cols-cols+1
+      k <- 0 until rows
+      l <- 0 until cols
+    do
+      result(i)(j) = result(i)(j) max this.underlying(i+k)(j+l)
+    Matrix[A, M-P+1, N-Q+1](result)
+
+  /**
+    * average-pooling
+    */
+  def avg[P <: Int: ValueOf, Q <: Int: ValueOf](using Field[A]): Matrix[A, M-P+1, N-Q+1] =
+    val rows = valueOf[P]
+    val cols = valueOf[Q]
+    require(rows <= this.rows && cols <= this.cols)
+    val size = rows*cols
+    val result = Array.fill(this.rows-rows+1, this.cols-cols+1)(Ring[A].zero)
+    for
+      i <- 0 until this.rows-rows+1
+      j <- 0 until this.cols-cols+1
+    do
+      for
+        k <- 0 until rows
+        l <- 0 until cols
+      do
+        result(i)(j) += this.underlying(i+k)(j+l)
+      result(i)(j) = result(i)(j) / size
+    Matrix[A, M-P+1, N-Q+1](result)
+
+  /**
+    * w/ stride
+    */
+  def stride[S <: Int: ValueOf] = WithStride[S](valueOf[S])
+
+  final class WithStride[S <: Int](private val stride: S):
+    require(stride > 0)
+
+    /**
+      * cross-correlation w/ stride
+      */
+    def ⋆[P <: Int, Q <: Int](that: Matrix[A, P, Q]): Matrix[A, (M-P)/S+1, (N-Q)/S+1] =
+      require(that.rows <= self.rows && that.cols <= self.cols)
+      require((self.rows-that.rows)%stride == 0 && (self.cols-that.cols)%stride == 0)
+      val result = Array.fill((self.rows-that.rows)/stride+1, (self.cols-that.cols)/stride+1)(Ring[A].zero)
+      for
+        i <- 0 until self.rows-that.rows+1 by stride
+        j <- 0 until self.cols-that.cols+1 by stride
+        iʹ = i/stride
+        jʹ = j/stride
+        k <- 0 until that.rows
+        l <- 0 until that.cols
+      do
+        result(iʹ)(jʹ) += self.underlying(i+k)(j+l) * that.underlying(k)(l)
+      Matrix[A, (M-P)/S+1, (N-Q)/S+1](result)
+
+    /**
+      * convolution w/ stride
+      */
+    def ∗[P <: Int, Q <: Int](that: Matrix[A, P, Q]): Matrix[A, (M-P)/S+1, (N-Q)/S+1] =
+      this ⋆ !that
+
+    /**
+      * max-pooling w/ stride
+      */
+    def max[P <: Int: ValueOf, Q <: Int: ValueOf](min: A)(using Ordering[A]): Matrix[A, (M-P)/S+1, (N-Q)/S+1] =
+      val rows = valueOf[P]
+      val cols = valueOf[Q]
+      require(rows <= self.rows && cols <= self.cols)
+      require((self.rows-rows)%stride == 0, (self.cols-cols)%stride == 0)
+      val result = Array.fill((self.rows-rows)/stride+1, (self.cols-cols)/stride+1)(min)
+      for
+        i <- 0 until self.rows-rows+1 by stride
+        j <- 0 until self.cols-cols+1 by stride
+        iʹ = i/stride
+        jʹ = j/stride
+        k <- 0 until rows
+        l <- 0 until cols
+      do
+        result(iʹ)(jʹ) = result(iʹ)(jʹ) max self.underlying(i+k)(j+l)
+      Matrix[A, (M-P)/S+1, (N-Q)/S+1](result)
+
+  /**
     * unsafe assignment
     */
   def :=(that: Matrix[A, ?, ?]): Unit =
@@ -158,9 +284,14 @@ case class Matrix[
       result(i)(j) = c(underlying(i)(j))
     Matrix[B, M, N](result)
 
+  def flatten: Vector[A, M*N] =
+    Vector[A, M*N](underlying.flatten.toArray)
+
   def toSeq: Seq[Seq[A]] = underlying.map(_.toSeq).toSeq
 
   override def toString: String = underlying.map(_.mkString("[", ", ", "]")).mkString("[", ", ", "]")
+
+}
 
 
 object Matrix:

@@ -87,10 +87,10 @@ case class Network[
 
         total = total min loss.apply(output.answer, y)
 
+        // BACKPROPAGATION
+
         var delta = Vector[Real](rows.map(loss.partial(output.answer, y)(_))*)
                   ⊙ prime(L-1, net(L-1))
-
-        // BACKPROPAGATION
 
         for
           l <- cols.tail.reverse

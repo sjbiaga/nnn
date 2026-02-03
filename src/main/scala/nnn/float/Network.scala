@@ -108,13 +108,13 @@ case class Network[
 
         total = total min loss.apply(output.answer, y)
 
+        // BACKPROPAGATION
+
         var delta: Vector[Float, ?] = {
           given Int = L
           Vector[Float][N[given_Int.type]](rows.map(loss.partial(output.answer, y)(_))*)
         ⊙ prime(given_Int)(net(L-1).asInstanceOf[Vector[Float, N[given_Int.type]]])
         }
-
-        // BACKPROPAGATION
 
         for
           given Int <- cols.tail.reverse

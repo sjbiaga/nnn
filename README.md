@@ -70,7 +70,7 @@ where `N` is the shape and `2` is the number of hidden layers, while the (values
 shape is passed as implicit parameter. Then, `1` occuring in the argument
 `loss = MSE[1]()` is the same number of neurons in the output layer.
 
-Note that the output layer is also considered a hidden layer.
+Note that the output layer is also a hidden layer.
 
 Testing
 -------
@@ -82,3 +82,310 @@ Use, for instance, the following `sbt` command:
 This will run all tests with the word "`Network`" in package "`double`" (where all
 values, functions, or networks are based on the `Double` type): there is only one
 such suite, `nnn.double.NetworkSuite`.
+
+Math
+----
+
+Consider a neural network with three hidden layers (the last of each is the output
+layer) and three neurons per each layer, like in the following table:
+
+| Input | Layer | Layer | Layer/Output |
+|-------|-------|-------|--------------|
+| $1$ | $1$ | $1$ | |
+| $x_1$ | $a_{11} {\phi_{11} \atop \longrightarrow} h_{11}$ | $a_{12} {\phi_{12} \atop \longrightarrow}h_{12}$ | $a_{13} {\phi_{13} \atop \longrightarrow} y_1$ |
+| $x_2$ | $a_{21} {\phi_{21} \atop \longrightarrow} h_{21}$ | $a_{22} {\phi_{22} \atop \longrightarrow}h_{22}$ | $a_{23} {\phi_{23} \atop \longrightarrow} y_2$ |
+| $x_3$ | $a_{31} {\phi_{31} \atop \longrightarrow} h_{31}$ | $a_{32} {\phi_{32} \atop \longrightarrow}h_{32}$ | $a_{33} {\phi_{33} \atop \longrightarrow} y_3$ |
+
+The layers are fully connected, in the sense of the following nine equations:
+
+
+```math
+\begin{align*}
+a_{11} = w_{11}^0 \times 1 + w_{11}^1 \times x_1 + w_{11}^2 \times x_2 + w_{11}^3 \times x_3 & & a_{12} = w_{12}^0 \times 1 + w_{12}^1 \times h_{11} + w_{12}^2 \times h_{21} + w_{12}^3 \times h_{31} & & a_{13} = w_{13}^0 \times 1 + w_{13}^1 \times h_{12} + w_{13}^2 \times h_{22} + w_{13}^3 \times h_{23} \\
+a_{21} = w_{21}^0 \times 1 + w_{21}^1 \times x_1 + w_{21}^2 \times x_2 + w_{21}^3 \times x_3 & & a_{22} = w_{22}^0 \times 1 + w_{22}^1 \times h_{11} + w_{22}^2 \times h_{21} + w_{22}^3 \times h_{31} & & a_{23} = w_{23}^0 \times 1 + w_{23}^1 \times h_{12} + w_{23}^2 \times h_{22} + w_{23}^3 \times h_{23} \\
+a_{31} = w_{31}^0 \times 1 + w_{31}^1 \times x_1 + w_{31}^2 \times x_2 + w_{31}^3 \times x_3 & & a_{32} = w_{32}^0 \times 1 + w_{32}^1 \times h_{11} + w_{32}^2 \times h_{21} + w_{32}^3 \times h_{31} & & a_{33} = w_{33}^0 \times 1 + w_{33}^1 \times h_{12} + w_{33}^2 \times h_{22} + w_{33}^3 \times h_{23} \\
+\end{align*}
+```
+
+where $w_{ij}^k$ is the weight of the $i^{th}$ neuron on the $j^{th}$ layer with
+respect to the $k^{th}$ output from the previous layer. We have, in matrix form:
+
+```math
+\begin{align*}
+\begin{pmatrix}
+a_{11} \\
+\\
+a_{21} \\
+\\
+a_{31}
+\end{pmatrix} =
+\begin{pmatrix}
+w_{11}^0 & w_{11}^1 & w_{11}^2 & w_{11}^3 \\
+\\
+w_{21}^0 & w_{21}^1 & w_{21}^2 & w_{21}^3 \\
+\\
+w_{31}^0 & w_{31}^1 & w_{31}^2 & w_{31}^3
+\end{pmatrix} \cdot
+\begin{pmatrix}
+1 \\
+\\
+x_1 \\
+\\
+x_2 \\
+\\
+x_3
+\end{pmatrix} & &
+\begin{pmatrix}
+a_{12} \\
+\\
+a_{22} \\
+\\
+a_{32}
+\end{pmatrix} =
+\begin{pmatrix}
+w_{12}^0 & w_{12}^1 & w_{12}^2 & w_{12}^3 \\
+\\
+w_{22}^0 & w_{22}^1 & w_{22}^2 & w_{22}^3 \\
+\\
+w_{32}^0 & w_{32}^1 & w_{32}^2 & w_{32}^3
+\end{pmatrix} \cdot
+\begin{pmatrix}
+1 \\
+\\
+h_{11} \\
+\\
+h_{21} \\
+\\
+h_{31}
+\end{pmatrix} & &
+\begin{pmatrix}
+a_{13} \\
+\\
+a_{23} \\
+\\
+a_{33}
+\end{pmatrix} =
+\begin{pmatrix}
+w_{13}^0 & w_{13}^1 & w_{13}^2 & w_{13}^3 \\
+\\
+w_{23}^0 & w_{23}^1 & w_{23}^2 & w_{23}^3 \\
+\\
+w_{33}^0 & w_{33}^1 & w_{33}^2 & w_{33}^3
+\end{pmatrix} \cdot
+\begin{pmatrix}
+1 \\
+\\
+h_{12} \\
+\\
+h_{22} \\
+\\
+h_{32}
+\end{pmatrix}
+\end{align*}
+```
+
+The outputs can be written more briefly using indices:
+
+```math
+\begin{align*}
+h_{ij} = \phi_{ij}(a_{ij}) & & i = \overline{1 \dots 3}, j = \overline{1 \dots 2} \\
+y_i = \phi_{i3}(a_{i3}) & & i = \overline{1 \dots 3}
+\end{align*}
+```
+
+These were the equations corresponding to the forward pass. For backpropagation,
+we proceed backwards, from the output layer towards the input layer. Assume $L$
+is the loss function; it has three known partial derivatives:
+$\frac{\partial{L}}{\partial{y_i}}$, where $i = \overline{1 \dots 3}$.
+
+From these, we start with the derivatives of $L$ with respect to the weights in
+the last (output) layer ($w_{i3}^k$, where $i = \overline{1 \dots 3}$ and
+$k = \overline{0 \dots 3}$). Using the [chain rule](https://en.wikipedia.org/wiki/Chain_rule)
+the following equations hold:
+
+```math
+\begin{align*}
+\frac{\partial{L}}{\partial{w_{13}^0}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times 1 & & \frac{\partial{L}}{\partial{w_{13}^1}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{13}^2}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{13}^3}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{32} \\
+\frac{\partial{L}}{\partial{w_{23}^0}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times 1 & & \frac{\partial{L}}{\partial{w_{23}^1}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{23}^2}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{23}^3}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{32} \\
+\frac{\partial{L}}{\partial{w_{33}^0}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times 1 & & \frac{\partial{L}}{\partial{w_{33}^1}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{33}^2}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{33}^3}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{32}
+\end{align*}
+```
+
+We note that $\frac{\partial{L}}{\partial{y_i}} \times \phi_{i3}'(a_{i3})$,
+where $i = \overline{1 \dots 3}$, occurs repeatedly: we may thus introduce
+the following matrix named $\delta$ (using the Hadamard product $\odot$):
+
+```math
+\delta =
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{y_1}} \\
+\\
+\frac{\partial{L}}{\partial{y_2}} \\
+\\
+\frac{\partial{L}}{\partial{y_3}}
+\end{pmatrix} \odot
+\begin{pmatrix}
+\phi_{13}'(a_{13}) \\
+\\
+\phi_{23}'(a_{23}) \\
+\\
+\phi_{33}'(a_{33})
+\end{pmatrix}
+```
+
+Then, the previous equations become (under the notation $\nabla^{(3)}$ - the
+partial derivatives of $L$ with respect to the weights on the $3^{rd}$ layer):
+
+```math
+\nabla^{(3)} =
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{w_{13}^0}} & \frac{\partial{L}}{\partial{w_{13}^1}} & \frac{\partial{L}}{\partial{w_{13}^2}} & \frac{\partial{L}}{\partial{w_{13}^3}} \\
+\\
+\frac{\partial{L}}{\partial{w_{23}^0}} & \frac{\partial{L}}{\partial{w_{23}^1}} & \frac{\partial{L}}{\partial{w_{23}^2}} & \frac{\partial{L}}{\partial{w_{23}^3}} \\
+\\
+\frac{\partial{L}}{\partial{w_{33}^0}} & \frac{\partial{L}}{\partial{w_{33}^1}} & \frac{\partial{L}}{\partial{w_{33}^2}} & \frac{\partial{L}}{\partial{w_{33}^3}}
+\end{pmatrix} =
+\delta^{T} \cdot
+\begin{pmatrix}
+1 \\
+\\
+h_{12} \\
+\\
+h_{22} \\
+\\
+h_{32} \\
+\end{pmatrix}
+```
+
+Let us now write the nine partial derivatives of $L$ with respect to the weights
+on the $2^{nd}$ layer, each equation being a sum of three terms:
+
+```math
+\begin{align}
+\frac{\partial{L}}{\partial{w_{12}^0}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times 1 & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times 1 & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times 1 \\
+\frac{\partial{L}}{\partial{w_{12}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{11} \\
+\frac{\partial{L}}{\partial{w_{12}^2}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{21} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{21} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{21} \\
+\frac{\partial{L}}{\partial{w_{12}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a12) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a12) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a12) \times h_{31} \\
+\frac{\partial{L}}{\partial{w_{22}^0}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times 1 & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times 1 & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times 1 \\
+\frac{\partial{L}}{\partial{w_{22}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{11} \\
+\frac{\partial{L}}{\partial{w_{22}^2}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{21} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{21} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{21} \\
+\frac{\partial{L}}{\partial{w_{22}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a22) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a22) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a22) \times h_{31} \\
+\frac{\partial{L}}{\partial{w_{32}^0}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times 1 & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times 1 & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times 1 \\
+\frac{\partial{L}}{\partial{w_{32}^1}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{11} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{11} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{11} \\
+\frac{\partial{L}}{\partial{w_{32}^2}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{21} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{21} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{21} \\
+\frac{\partial{L}}{\partial{w_{32}^3}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a32) \times h_{31} & + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a32) \times h_{31} & + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a32) \times h_{31} \\
+\end{align}
+```
+
+Let us now observe what is the product of the transpose of the $3^{rd}$ layer's
+weights matrix, and delta:
+
+```math
+{W^{(3)}}^T \cdot \delta =
+\begin{pmatrix}
+w_{13}^0 & w_{23}^0 & w_{33}^0 \\
+\\
+w_{13}^1 & w_{23}^1 & w_{33}^1 \\
+\\
+w_{13}^2 & w_{23}^2 & w_{33}^2 \\
+\\
+w_{13}^3 & w_{23}^3 & w_{33}^3 \\
+\end{pmatrix} \cdot
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \\
+\\
+\frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \\
+\\
+\frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33})
+\end{pmatrix} =
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^0 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^0 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^0 \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \\
+\end{pmatrix}
+```
+
+Let us further drop the first row in the above matrix (denoting this transient
+matrix by ${\left( {W^{(3)}}^T \cdot \delta \right)}^*$):
+
+```math
+{\left( {W^{(3)}}^T \cdot \delta \right)}^* =
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \\
+\end{pmatrix}
+```
+
+and apply the following Hadamard product:
+
+```math
+{\left( {W^{(3)}}^T \cdot \delta \right)}^* \odot
+\begin{pmatrix}
+\phi_{12}'(a_{12}) \\
+\\
+\phi_{22}'(a_{22}) \\
+\\
+\phi_{32}'(a_{32})
+\end{pmatrix} =
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \\
+\end{pmatrix} \odot
+\begin{pmatrix}
+\phi_{12}'(a_{12}) \\
+\\
+\phi_{22}'(a_{22}) \\
+\\
+\phi_{32}'(a_{32})
+\end{pmatrix}
+```
+
+We obtain the following result, again re-assigned to $\delta$:
+
+```math
+\delta =
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a_{12}) + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a_{12}) + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a_{12}) \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a_{22}) + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a_{22}) + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a_{22}) \\
+\\
+\frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a_{32}) + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a_{32}) + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a_{32}) \\
+\end{pmatrix}
+```
+
+The first row of this matrix corresponds to equations (4)-(7), the second row to
+equations (8)-(11), and the third row to equations (12)-(15).
+
+Then, the equations (4)-(15) become (under the notation $\nabla^{(2)}$ - the
+partial derivatives of $L$ with respect to the weights on the $2^{nd}$ layer):
+
+```math
+\nabla^{(2)} =
+\begin{pmatrix}
+\frac{\partial{L}}{\partial{w_{12}^0}} & \frac{\partial{L}}{\partial{w_{12}^1}} & \frac{\partial{L}}{\partial{w_{12}^2}} & \frac{\partial{L}}{\partial{w_{12}^3}} \\
+\\
+\frac{\partial{L}}{\partial{w_{22}^0}} & \frac{\partial{L}}{\partial{w_{22}^1}} & \frac{\partial{L}}{\partial{w_{22}^2}} & \frac{\partial{L}}{\partial{w_{22}^3}} \\
+\\
+\frac{\partial{L}}{\partial{w_{32}^0}} & \frac{\partial{L}}{\partial{w_{32}^1}} & \frac{\partial{L}}{\partial{w_{32}^2}} & \frac{\partial{L}}{\partial{w_{32}^3}}
+\end{pmatrix} =
+\delta^{T} \cdot
+\begin{pmatrix}
+1 \\
+\\
+h_{11} \\
+\\
+h_{21} \\
+\\
+h_{31} \\
+\end{pmatrix}
+```
