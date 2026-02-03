@@ -90,8 +90,8 @@ Consider a neural network with three hidden layers (the last of each is the outp
 layer) and three neurons per each layer, like in the following table:
 
 | Input | Layer | Layer | Layer/Output |
-|-------|-------|-------|--------------|
-| $1$ | $1$ | $1$ | |
+|:-----:|:-----:|:-----:|:------------:|
+|  $1$  |  $1$  |  $1$  |              |
 | $x_1$ | $a_{11} {\phi_{11} \atop \longrightarrow} h_{11}$ | $a_{12} {\phi_{12} \atop \longrightarrow}h_{12}$ | $a_{13} {\phi_{13} \atop \longrightarrow} y_1$ |
 | $x_2$ | $a_{21} {\phi_{21} \atop \longrightarrow} h_{21}$ | $a_{22} {\phi_{22} \atop \longrightarrow}h_{22}$ | $a_{23} {\phi_{23} \atop \longrightarrow} y_2$ |
 | $x_3$ | $a_{31} {\phi_{31} \atop \longrightarrow} h_{31}$ | $a_{32} {\phi_{32} \atop \longrightarrow}h_{32}$ | $a_{33} {\phi_{33} \atop \longrightarrow} y_3$ |
@@ -388,10 +388,10 @@ We obtain the following result, again re-assigned to $\delta$:
 \end{pmatrix}
 ```
 
-The first row of this matrix corresponds to equations (4)-(7), the second row to
-equations (8)-(11), and the third row to equations (12)-(15).
+The first row of this matrix corresponds to equations $(4)-(7)$, the second row to
+equations $(8)-(11)$, and the third row to equations $(12)-(15)$.
 
-Then, the equations (4)-(15) become (under the notation $\nabla^{(2)}$ - the
+Then, the equations $(4)-(15)$ become (under the notation $\nabla^{(2)}$ - the
 partial derivatives of $L$ with respect to the weights on the $2^{nd}$ layer):
 
 ```math
