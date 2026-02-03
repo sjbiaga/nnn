@@ -101,9 +101,9 @@ The layers are fully connected, in the sense of the following nine equations:
 
 ```math
 \begin{align*}
-a_{11} = w_{11}^0 \times 1 + w_{11}^1 \times x_1 + w_{11}^2 \times x_2 + w_{11}^3 \times x_3 & & a_{12} = w_{12}^0 \times 1 + w_{12}^1 \times h_{11} + w_{12}^2 \times h_{21} + w_{12}^3 \times h_{31} & & a_{13} = w_{13}^0 \times 1 + w_{13}^1 \times h_{12} + w_{13}^2 \times h_{22} + w_{13}^3 \times h_{23} \\
-a_{21} = w_{21}^0 \times 1 + w_{21}^1 \times x_1 + w_{21}^2 \times x_2 + w_{21}^3 \times x_3 & & a_{22} = w_{22}^0 \times 1 + w_{22}^1 \times h_{11} + w_{22}^2 \times h_{21} + w_{22}^3 \times h_{31} & & a_{23} = w_{23}^0 \times 1 + w_{23}^1 \times h_{12} + w_{23}^2 \times h_{22} + w_{23}^3 \times h_{23} \\
-a_{31} = w_{31}^0 \times 1 + w_{31}^1 \times x_1 + w_{31}^2 \times x_2 + w_{31}^3 \times x_3 & & a_{32} = w_{32}^0 \times 1 + w_{32}^1 \times h_{11} + w_{32}^2 \times h_{21} + w_{32}^3 \times h_{31} & & a_{33} = w_{33}^0 \times 1 + w_{33}^1 \times h_{12} + w_{33}^2 \times h_{22} + w_{33}^3 \times h_{23} \\
+a_{11} = w_{11}^0 \times 1 + w_{11}^1 \times x_1 + w_{11}^2 \times x_2 + w_{11}^3 \times x_3 & & a_{12} = w_{12}^0 \times 1 + w_{12}^1 \times h_{11} + w_{12}^2 \times h_{21} + w_{12}^3 \times h_{31} & & a_{13} = w_{13}^0 \times 1 + w_{13}^1 \times h_{12} + w_{13}^2 \times h_{22} + w_{13}^3 \times h_{32} \\
+a_{21} = w_{21}^0 \times 1 + w_{21}^1 \times x_1 + w_{21}^2 \times x_2 + w_{21}^3 \times x_3 & & a_{22} = w_{22}^0 \times 1 + w_{22}^1 \times h_{11} + w_{22}^2 \times h_{21} + w_{22}^3 \times h_{31} & & a_{23} = w_{23}^0 \times 1 + w_{23}^1 \times h_{12} + w_{23}^2 \times h_{22} + w_{23}^3 \times h_{32} \\
+a_{31} = w_{31}^0 \times 1 + w_{31}^1 \times x_1 + w_{31}^2 \times x_2 + w_{31}^3 \times x_3 & & a_{32} = w_{32}^0 \times 1 + w_{32}^1 \times h_{11} + w_{32}^2 \times h_{21} + w_{32}^3 \times h_{31} & & a_{33} = w_{33}^0 \times 1 + w_{33}^1 \times h_{12} + w_{33}^2 \times h_{22} + w_{33}^3 \times h_{32} \\
 \end{align*}
 ```
 
@@ -448,46 +448,94 @@ _first_ neuron (in the _first_ hidden layer), where $k = \overline{0 \dots 3}$:
 
 ```math
 \begin{align*}
-\frac{\partial{L}}{\partial{w_{11}^k}} & = \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{12}}} \times \frac{\partial{h_{12}}}{\partial{\phi_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\frac{\partial{L}}{\partial{w_{11}^k}} & = \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{22}}} \times \frac{\partial{h_{22}}}{\partial{\phi_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{32}}} \times \frac{\partial{h_{32}}}{\partial{\phi_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{13}}}{\partial{a_{13}}} \times \frac{\partial{a_{13}}}{\partial{h_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{12}}} \times \frac{\partial{h_{12}}}{\partial{\phi_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{22}}} \times \frac{\partial{h_{22}}}{\partial{\phi_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{32}}} \times \frac{\partial{h_{32}}}{\partial{\phi_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_2}} \times \frac{\partial{\phi_{23}}}{\partial{a_{23}}} \times \frac{\partial{a_{23}}}{\partial{h_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_3}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{12}}} \times \frac{\partial{h_{12}}}{\partial{\phi_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_3}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{12}}} \times \frac{\partial{\phi_{12}}}{\partial{a_{12}}} \times \frac{\partial{a_{12}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{22}}} \times \frac{\partial{h_{22}}}{\partial{\phi_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_1}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{22}}} \times \frac{\partial{\phi_{22}}}{\partial{a_{22}}} \times \frac{\partial{a_{22}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 ```math
 \begin{align*}
-& + \frac{\partial{L}}{\partial{y_3}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{32}}} \times \frac{\partial{h_{32}}}{\partial{\phi_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{h_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \frac{\partial{L}}{\partial{y_3}} \times \frac{\partial{\phi_{33}}}{\partial{a_{33}}} \times \frac{\partial{a_{33}}}{\partial{h_{32}}} \times \frac{\partial{\phi_{32}}}{\partial{a_{32}}} \times \frac{\partial{a_{32}}}{\partial{h_{11}}} \times \frac{\partial{\phi_{11}}}{\partial{a_{11}}} \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+
+Rewriting all but the first and last factor in each term, we obtain:
+
+```math
+\begin{align*}
+\frac{\partial{L}}{\partial{w_{11}^k}} & = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^1 \times \phi_{12}'(a_{12}) \times w_{12}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^2 \times \phi_{22}'(a_{22}) \times w_{22}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times w_{13}^3 \times \phi_{32}'(a_{32}) \times w_{32}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^1 \times \phi_{12}'(a_{12}) \times w_{12}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^2 \times \phi_{22}'(a_{22}) \times w_{22}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times w_{23}^3 \times \phi_{32}'(a_{32}) \times w_{32}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^1 \times \phi_{12}'(a_{12}) \times w_{12}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_1}} \times \phi_{33}'(a_{33}) \times w_{33}^2 \times \phi_{22}'(a_{22}) \times w_{22}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+\end{align*}
+```
+```math
+\begin{align*}
+& + \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times w_{33}^3 \times \phi_{32}'(a_{32}) \times w_{32}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
