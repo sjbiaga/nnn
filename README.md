@@ -204,19 +204,19 @@ $k = \overline{0 \dots 3}$). Using the [chain rule](https://en.wikipedia.org/wik
 the following equations hold:
 
 ```math
-\begin{align*}
+\begin{align}
 \frac{\partial{L}}{\partial{w_{13}^0}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times 1 & & \frac{\partial{L}}{\partial{w_{13}^1}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{13}^2}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{13}^3}} = \frac{\partial{L}}{\partial{y_1}} \times \phi_{13}'(a_{13}) \times h_{32}
-\end{align*}
+\end{align}
 ```
 ```math
-\begin{align*}
+\begin{align}
 \frac{\partial{L}}{\partial{w_{23}^0}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times 1 & & \frac{\partial{L}}{\partial{w_{23}^1}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{23}^2}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{23}^3}} = \frac{\partial{L}}{\partial{y_2}} \times \phi_{23}'(a_{23}) \times h_{32}
-\end{align*}
+\end{align}
 ```
 ```math
-\begin{align*}
+\begin{align}
 \frac{\partial{L}}{\partial{w_{33}^0}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times 1 & & \frac{\partial{L}}{\partial{w_{33}^1}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{12} & & \frac{\partial{L}}{\partial{w_{33}^2}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{22} & & \frac{\partial{L}}{\partial{w_{33}^3}} = \frac{\partial{L}}{\partial{y_3}} \times \phi_{33}'(a_{33}) \times h_{32}
-\end{align*}
+\end{align}
 ```
 
 We note that $\frac{\partial{L}}{\partial{y_i}} \times \phi_{i3}'(a_{i3})$,
@@ -341,7 +341,7 @@ w_{13}^3 & w_{23}^3 & w_{33}^3 \\
 ```
 
 Let us further drop the first row in the above matrix (denoting this transient
-matrix with $*$ by ${\left( {W^{(3)}}^T \cdot \delta \right)}^*$):
+matrix by ${\left( {W^{(3)}}^T \cdot \delta \right)}^*$):
 
 ```math
 {\left( {W^{(3)}}^T \cdot \delta \right)}^* =
