@@ -409,5 +409,4 @@ partial derivatives of $L$ with respect to the weights on the $2^{nd}$ layer):
 \end{pmatrix}
 ```
 
-Math ([cont'd](https://github.com/sjbiaga/nnn/blob/main/README1.md))
---------------------------------------------------------------------
+### Math ([cont'd](https://github.com/sjbiaga/nnn/blob/main/README1.md))

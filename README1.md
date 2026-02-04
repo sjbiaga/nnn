@@ -1,7 +1,10 @@
+`N`-neurons Neural Networks
+===========================
+
 [Math](https://github.com/sjbiaga/nnn/blob/main/README.md#math) (cont'd)
 ------------------------------------------------------------------------
 
-Consider the samea neural network with three hidden layers (the last of each is the output
+Consider the same neural network with three hidden layers (the last of each is the output
 layer) and three neurons per each layer, like in the following table:
 
 | Input | Layer | Layer | Layer/Output |
@@ -269,6 +272,17 @@ matrix:
 \end{align*}
 ```
 
+For example, the partial derivative with respect to the weight $w_{11}^2$ corresponding
+to the $x_2$ input, is the following:
+
+```math
+\begin{align*}
+\frac{\partial{L}}{\partial{w_{11}^2}} & = \delta_{11} \times w_{12}^1 \times \phi_{11}'(a_{11}) \times x_2
+& + \delta_{12} \times w_{22}^1 \times \phi_{11}'(a_{11}) \times x_2
+& + \delta_{13} \times w_{32}^1 \times \phi_{11}'(a_{11}) \times x_2
+\end{align*}
+```
+
 Let us observe what is the product of the transpose of the $2^{nd}$ layer's
 weights matrix, and (current) delta:
 
@@ -303,6 +317,23 @@ Next, we drop the first (unused) row, and apply the following Hadamard product:
 \phi_{21}'(a_{21}) \\
 \\
 \phi_{31}'(a_{31})
+\end{pmatrix} =
+\begin{pmatrix}
+\delta_{11} \times w_{12}^1 + \delta_{12} \times w_{22}^1 + \delta_{13} \times w_{32}^1 \\
+\delta_{11} \times w_{12}^2 + \delta_{12} \times w_{22}^2 + \delta_{13} \times w_{32}^2 \\
+\delta_{11} \times w_{12}^3 + \delta_{12} \times w_{22}^3 + \delta_{13} \times w_{32}^3
+\end{pmatrix} \odot
+\begin{pmatrix}
+\phi_{11}'(a_{11}) \\
+\\
+\phi_{21}'(a_{21}) \\
+\\
+\phi_{31}'(a_{31})
+\end{pmatrix} =
+\begin{pmatrix}
+\delta_{11} \times w_{12}^1 \times \phi_{11}'(a_{11}) + \delta_{12} \times w_{22}^1 \times \phi_{11}'(a_{11}) + \delta_{13} \times w_{32}^1 \times \phi_{11}'(a_{11}) \\
+\delta_{11} \times w_{12}^2 \times \phi_{21}'(a_{21}) + \delta_{12} \times w_{22}^2 \times \phi_{21}'(a_{21}) + \delta_{13} \times w_{32}^2 \times \phi_{21}'(a_{21}) \\
+\delta_{11} \times w_{12}^3 \times \phi_{31}'(a_{31}) + \delta_{12} \times w_{22}^3 \times \phi_{31}'(a_{31}) + \delta_{13} \times w_{32}^3 \times \phi_{31}'(a_{31})
 \end{pmatrix}
 ```
 
