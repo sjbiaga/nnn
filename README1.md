@@ -267,8 +267,8 @@ matrix:
 ```math
 \begin{align*}
 \frac{\partial{L}}{\partial{w_{11}^k}} & = \delta_{11} \times w_{12}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
-& + \delta_{12} \times w_{22}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
-& + \delta_{13} \times w_{32}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \delta_{21} \times w_{22}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
+& + \delta_{31} \times w_{32}^1 \times \phi_{11}'(a_{11}) \times \frac{\partial{a_{11}}}{\partial{w_{11}^k}}
 \end{align*}
 ```
 
@@ -278,8 +278,8 @@ corresponding to the $x_2$ input, is the following:
 ```math
 \begin{align*}
 \frac{\partial{L}}{\partial{w_{11}^2}} & = \delta_{11} \times w_{12}^1 \times \phi_{11}'(a_{11}) \times x_2
-& + \delta_{12} \times w_{22}^1 \times \phi_{11}'(a_{11}) \times x_2
-& + \delta_{13} \times w_{32}^1 \times \phi_{11}'(a_{11}) \times x_2
+& + \delta_{21} \times w_{22}^1 \times \phi_{11}'(a_{11}) \times x_2
+& + \delta_{31} \times w_{32}^1 \times \phi_{11}'(a_{11}) \times x_2
 \end{align*}
 ```
 
@@ -296,14 +296,14 @@ w_{12}^3 & w_{22}^3 & w_{32}^3
 \end{pmatrix} \cdot
 \begin{pmatrix}
 \delta_{11} \\
-\delta_{12} \\
-\delta_{13}
+\delta_{21} \\
+\delta_{31}
 \end{pmatrix} =
 \begin{pmatrix}
-\delta_{11} \times w_{12}^0 + \delta_{12} \times w_{22}^0 + \delta_{13} \times w_{32}^0 \\
-\delta_{11} \times w_{12}^1 + \delta_{12} \times w_{22}^1 + \delta_{13} \times w_{32}^1 \\
-\delta_{11} \times w_{12}^2 + \delta_{12} \times w_{22}^2 + \delta_{13} \times w_{32}^2 \\
-\delta_{11} \times w_{12}^3 + \delta_{12} \times w_{22}^3 + \delta_{13} \times w_{32}^3
+\delta_{11} \times w_{12}^0 + \delta_{21} \times w_{22}^0 + \delta_{31} \times w_{32}^0 \\
+\delta_{11} \times w_{12}^1 + \delta_{21} \times w_{22}^1 + \delta_{31} \times w_{32}^1 \\
+\delta_{11} \times w_{12}^2 + \delta_{21} \times w_{22}^2 + \delta_{31} \times w_{32}^2 \\
+\delta_{11} \times w_{12}^3 + \delta_{21} \times w_{22}^3 + \delta_{31} \times w_{32}^3
 \end{pmatrix}
 ```
 
@@ -319,9 +319,9 @@ Next, we drop the first (unused) row, and apply the following Hadamard product:
 \phi_{31}'(a_{31})
 \end{pmatrix} =
 \begin{pmatrix}
-\delta_{11} \times w_{12}^1 + \delta_{12} \times w_{22}^1 + \delta_{13} \times w_{32}^1 \\
-\delta_{11} \times w_{12}^2 + \delta_{12} \times w_{22}^2 + \delta_{13} \times w_{32}^2 \\
-\delta_{11} \times w_{12}^3 + \delta_{12} \times w_{22}^3 + \delta_{13} \times w_{32}^3
+\delta_{11} \times w_{12}^1 + \delta_{21} \times w_{22}^1 + \delta_{31} \times w_{32}^1 \\
+\delta_{11} \times w_{12}^2 + \delta_{21} \times w_{22}^2 + \delta_{31} \times w_{32}^2 \\
+\delta_{11} \times w_{12}^3 + \delta_{21} \times w_{22}^3 + \delta_{31} \times w_{32}^3
 \end{pmatrix} \odot
 \begin{pmatrix}
 \phi_{11}'(a_{11}) \\
@@ -331,9 +331,9 @@ Next, we drop the first (unused) row, and apply the following Hadamard product:
 \phi_{31}'(a_{31})
 \end{pmatrix} =
 \begin{pmatrix}
-\delta_{11} \times w_{12}^1 \times \phi_{11}'(a_{11}) + \delta_{12} \times w_{22}^1 \times \phi_{11}'(a_{11}) + \delta_{13} \times w_{32}^1 \times \phi_{11}'(a_{11}) \\
-\delta_{11} \times w_{12}^2 \times \phi_{21}'(a_{21}) + \delta_{12} \times w_{22}^2 \times \phi_{21}'(a_{21}) + \delta_{13} \times w_{32}^2 \times \phi_{21}'(a_{21}) \\
-\delta_{11} \times w_{12}^3 \times \phi_{31}'(a_{31}) + \delta_{12} \times w_{22}^3 \times \phi_{31}'(a_{31}) + \delta_{13} \times w_{32}^3 \times \phi_{31}'(a_{31})
+\delta_{11} \times w_{12}^1 \times \phi_{11}'(a_{11}) + \delta_{21} \times w_{22}^1 \times \phi_{11}'(a_{11}) + \delta_{31} \times w_{32}^1 \times \phi_{11}'(a_{11}) \\
+\delta_{11} \times w_{12}^2 \times \phi_{21}'(a_{21}) + \delta_{21} \times w_{22}^2 \times \phi_{21}'(a_{21}) + \delta_{31} \times w_{32}^2 \times \phi_{21}'(a_{21}) \\
+\delta_{11} \times w_{12}^3 \times \phi_{31}'(a_{31}) + \delta_{21} \times w_{22}^3 \times \phi_{31}'(a_{31}) + \delta_{31} \times w_{32}^3 \times \phi_{31}'(a_{31})
 \end{pmatrix}
 ```
 
