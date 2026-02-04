@@ -272,8 +272,8 @@ matrix:
 \end{align*}
 ```
 
-For example, the partial derivative with respect to the weight $w_{11}^2$ corresponding
-to the $x_2$ input, is the following:
+For example, the partial derivative of $L$ with respect to the weight $w_{11}^2$
+corresponding to the $x_2$ input, is the following:
 
 ```math
 \begin{align*}
@@ -362,4 +362,11 @@ with respect to the weights on the $1^{st}$ layer:
 \begin{pmatrix}
 1 & x_1 & x_2 & x_3
 \end{pmatrix}
+```
+
+After each training epoch, we employ gradient descent to update the weight matrices
+for a layer $j = \overline{1 \dots 3}$, given a learning rate $η$, thus:
+
+```math
+W^{(j)} := W^{(j)} - η\nabla^{(j)}
 ```
