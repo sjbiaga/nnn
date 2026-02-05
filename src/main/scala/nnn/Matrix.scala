@@ -56,14 +56,14 @@ case class Matrix[
   /**
     * binary operation
     */
-  def op2(that: Matrix[A, M, N])(fun: (A, A) => A): Matrix[A, M, N] =
-    val result = Array.fill(rows, cols)(Ring[A].zero)
+  def op2[B, C: Ring: ClassTag](that: Matrix[B, M, N])(fun: (A, B) => C): Matrix[C, M, N] =
+    val result = Array.fill(rows, cols)(Ring[C].zero)
     for
       i <- 0 until rows
       j <- 0 until cols
     do
       result(i)(j) += fun(this.underlying(i)(j), that.underlying(i)(j))
-    Matrix[A, M, N](result)
+    Matrix[C, M, N](result)
 
   /**
     * addition
@@ -72,7 +72,13 @@ case class Matrix[
     op2(that)(_ + _)
 
   /**
-    * multiplication
+    * alias for multiplication using dot product
+    */
+  inline def apply[P <: Int](that: Matrix[A, N, P]): Matrix[A, M, P] =
+    this ⋅ that
+
+  /**
+    * multiplication using dot product
     */
   def ⋅[P <: Int](that: Matrix[A, N, P]): Matrix[A, M, P] =
     val result = Array.fill(this.rows, that.cols)(Ring[A].zero)
@@ -103,22 +109,16 @@ case class Matrix[
     Vector[A, M](result)
 
   /**
-    * negation
-    */
-  def unary_- : Matrix[A, M, N] =
-    op(-_)
-
-  /**
     * unary operation
     */
-  def op(fun: A => A): Matrix[A, M, N] =
-    val result = Array.fill(rows, cols)(Ring[A].zero)
+  def op[B: Ring: ClassTag](fun: A => B): Matrix[B, M, N] =
+    val result = Array.fill(rows, cols)(Ring[B].zero)
     for
       i <- 0 until rows
       j <- 0 until cols
     do
       result(i)(j) = fun(underlying(i)(j))
-    Matrix[A, M, N](result)
+    Matrix[B, M, N](result)
 
   /**
     * transpose
@@ -200,15 +200,16 @@ case class Matrix[
         l <- 0 until cols
       do
         result(i)(j) += this.underlying(i+k)(j+l)
-      result(i)(j) = result(i)(j) / size
+      result(i)(j) /= size
     Matrix[A, M-P+1, N-Q+1](result)
 
   /**
     * w/ stride
     */
-  def stride[S <: Int: ValueOf] = WithStride[S](valueOf[S])
+  def apply[S <: Int: ValueOf] = PartiallyAppliedStrideOps[S]
 
-  final class WithStride[S <: Int](private val stride: S):
+  final class PartiallyAppliedStrideOps[S <: Int: ValueOf]:
+    private val stride: S = valueOf[S]
     require(stride > 0)
 
     /**
@@ -255,6 +256,30 @@ case class Matrix[
         result(iʹ)(jʹ) = result(iʹ)(jʹ) max self.underlying(i+k)(j+l)
       Matrix[A, (M-P)/S+1, (N-Q)/S+1](result)
 
+    /**
+      * average-pooling w/ stride
+      */
+    def avg[P <: Int: ValueOf, Q <: Int: ValueOf](using Field[A]): Matrix[A, (M-P)/S+1, (N-Q)/S+1] =
+      val rows = valueOf[P]
+      val cols = valueOf[Q]
+      require(rows <= self.rows && cols <= self.cols)
+      require((self.rows-rows)%stride == 0, (self.cols-cols)%stride == 0)
+      val size = rows*cols
+      val result = Array.fill((self.rows-rows)/stride+1, (self.cols-cols)/stride+1)(Ring[A].zero)
+      for
+        i <- 0 until self.rows-rows+1 by stride
+        j <- 0 until self.cols-cols+1 by stride
+        iʹ = i/stride
+        jʹ = j/stride
+      do
+        for
+          k <- 0 until rows
+          l <- 0 until cols
+        do
+          result(iʹ)(jʹ) += self.underlying(i+k)(j+l)
+        result(iʹ)(jʹ) /= size
+      Matrix[A, (M-P)/S+1, (N-Q)/S+1](result)
+
   /**
     * unsafe assignment
     */
@@ -284,7 +309,7 @@ case class Matrix[
       result(i)(j) = c(underlying(i)(j))
     Matrix[B, M, N](result)
 
-  def flatten: Vector[A, M*N] =
+  def unary_- : Vector[A, M*N] =
     Vector[A, M*N](underlying.flatten.toArray)
 
   def toSeq: Seq[Seq[A]] = underlying.map(_.toSeq).toSeq
@@ -299,6 +324,10 @@ object Matrix:
   given [A: Ring: ClassTag, N <: Int]: Conversion[Matrix[A, 1, N], Vector[A, N]] with
     def apply(self: Matrix[A, 1, N]): Vector[A, N] =
       Vector[A, N](self.underlying(0).toArray)
+
+  given [A]: Conversion[Matrix[A, 1, 1], A] with
+    def apply(self: Matrix[A, 1, 1]): A =
+      self.underlying(0)(0)
 
   def apply[A: Ring: ClassTag] = PartiallyAppliedOps[A]
 

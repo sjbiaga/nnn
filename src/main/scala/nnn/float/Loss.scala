@@ -23,11 +23,11 @@ enum Loss[N <: Int: ValueOf](val apply: (Vector[Float, N], Vector[Float, N]) => 
   /**
     * Mean Squared Error
     */
-  case MSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (1f / valueOf[N]) * (ideal + -real).op(sqr).sum },
+  case MSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (1f / valueOf[N]) * (ideal + real.op(-_)).op(sqr).sum },
                                                 { (ideal, real) => i => (2f / valueOf[N]) * (real(i) - ideal(i)) })
 
   /**
     * Sum of Squares Error
     */
-  case SSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (ideal + -real).op(sqr).sum },
+  case SSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (ideal + real.op(-_)).op(sqr).sum },
                                                 { (ideal, real) => i => 2 * (real(i) - ideal(i)) })

@@ -136,7 +136,7 @@ class MatrixSuite extends FunSuite:
                               14, 21, 13,
                               16,  7, 23)
 
-    assertEquals(m.stride[2] ⋆ n, p)
+    assertEquals(m[2] ⋆ n, p)
   }
 
   test("matrix max-pooling") {
@@ -163,7 +163,7 @@ class MatrixSuite extends FunSuite:
                               8, 8, 6, 6, 7,
                               8, 8, 6, 6, 6)
 
-    assertEquals(m.stride[1].max[3, 3](Int.MinValue), n)
+    assertEquals(m[1].max[3, 3](Int.MinValue), n)
   }
 
   test("matrix max-pooling w/ stride 2") {
@@ -179,15 +179,31 @@ class MatrixSuite extends FunSuite:
                               8, 5, 7,
                               8, 6, 6)
 
-    assertEquals(m.stride[2].max[3, 3](Int.MinValue), n)
+    assertEquals(m[2].max[3, 3](Int.MinValue), n)
+  }
+
+  test("matrix average-pooling w/ stride 2") {
+    val m = Matrix[Float][7, 7](6, 3, 4, 4, 5, 0, 3,
+                                4, 7, 4, 0, 4, 0, 4,
+                                7, 0, 2, 3, 4, 5, 2,
+                                3, 7, 5, 0, 3, 0, 7,
+                                5, 8, 1, 2, 5, 4, 2,
+                                8, 0, 1, 0, 6, 0, 0,
+                                6, 4, 1, 3, 0, 4, 5)
+
+    val n = Matrix[Float][3, 3](4.1111110f, 3.3333333f, 3.0000000f,
+                                4.2222223f, 2.7777777f, 3.5555556f,
+                                3.7777777f, 2.1111112f, 2.8888888f)
+
+    assertEquals(m[2].avg[3, 3], n)
   }
 
   test("matrix flatten") {
-    val m = Matrix[Int][3, 3](1, 3, 5,
+    val m = Matrix[Int][3, 3]( 1, 3,  5,
                               -4, 0, -3,
-                              5, 7, -9)
+                               5, 7, -9)
 
     val n = Vector[Int][9](1, 3, 5, -4, 0, -3, 5, 7, -9)
 
-    assertEquals(m.flatten, n)
+    assertEquals(-m, n)
   }

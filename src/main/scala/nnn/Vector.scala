@@ -47,13 +47,13 @@ case class Vector[
   /**
     * binary operation
     */
-  def op2(that: Vector[A, N])(fun: (A, A) => A): Vector[A, N] =
-    val result = Array.fill(rows)(Ring[A].zero)
+  def op2[B, C: Ring: ClassTag](that: Vector[B, N])(fun: (A, B) => C): Vector[C, N] =
+    val result = Array.fill(rows)(Ring[C].zero)
     for
       k <- 0 until rows
     do
       result(k) = fun(this.underlying(k), that.underlying(k))
-    Vector[A, N](result)
+    Vector[C, N](result)
 
   /**
     * addition
@@ -62,7 +62,24 @@ case class Vector[
     op2(that)(_ + _)
 
   /**
-    * multiplication
+    * alias for dot product
+    */
+  inline def apply(that: Vector[A, N]): A =
+    this ⋅ that
+
+  /**
+    * dot product
+    */
+  def ⋅(that: Vector[A, N])(using DummyImplicit): A =
+    var result = Ring[A].zero
+    for
+      k <- 0 until rows
+    do
+      result += this.underlying(k) * that.underlying(k)
+    result
+
+  /**
+    * multiplication as matrices
     */
   def ⋅[M <: Int](that: Vector[A, M]): Matrix[A, N, M] =
     val result = Array.fill(this.rows, that.rows)(Ring[A].zero)
@@ -80,21 +97,15 @@ case class Vector[
     op2(that)(_ * _)
 
   /**
-    * negation
-    */
-  def unary_- : Vector[A, N] =
-    op(-_)
-
-  /**
     * unary operation
     */
-  def op(fun: A => A): Vector[A, N] =
-    val result = Array.fill(rows)(Ring[A].zero)
+  def op[B: Ring: ClassTag](fun: A => B): Vector[B, N] =
+    val result = Array.fill(rows)(Ring[B].zero)
     for
       k <- 0 until rows
     do
       result(k) = fun(underlying(k))
-    Vector[A, N](result)
+    Vector[B, N](result)
 
   /**
     * transpose
@@ -164,6 +175,10 @@ object Vector:
   given [A: Ring: ClassTag, N <: Int]: Conversion[Vector[A, N], Matrix[A, 1, N]] with
     def apply(self: Vector[A, N]): Matrix[A, 1, N] =
       Matrix[A, 1, N](Array(self.underlying.toArray))
+
+  given [A]: Conversion[Vector[A, 1], A] with
+    def apply(self: Vector[A, 1]): A =
+      self.underlying(0)
 
   def apply[A: Ring: ClassTag] = PartiallyAppliedOps[A]
 
