@@ -11,12 +11,12 @@ import Network.*
 
 case class Network[
   N[_ <: Int] <: Int,
-  L <: Int: ValueOf
-](loss: Loss[N[L]],
+  M <: Int: ValueOf
+](loss: Loss[N[M]],
   learningRate: Float,
   layers: Layer[?]*)
   (using shape: List[Int]):
-  require(valueOf[L] == layers.size)
+  require(valueOf[M] == layers.size)
 
   // given_Int is the current layer (L) in which each neuron has shape(given_Long.toInt) weights (plus bias)
   protected implicit def _valueOf[L <: Int](using l: Int): ValueOf[N[L]] = ValueOf(shape(l).asInstanceOf[N[L]])
@@ -24,10 +24,10 @@ case class Network[
   protected implicit def _valueOf1[L <: Int](using l: Long): ValueOf[N[L]+1] = ValueOf((shape(l.toInt)+1).asInstanceOf[N[L]+1])
   // given_Long.toInt == given_Int-1, although given_Int comes first and given_Long comes second
 
-  val L = valueOf[L]
+  val M = valueOf[M]
 
   def rows(using l: Int) = 0 until layers(l-1).neurons.size
-  val cols = 1 to L
+  val cols = 1 to M
 
   /**
     * (bias and) weights matrices
@@ -39,8 +39,8 @@ case class Network[
       l = given_Int-1
       given Long = l.toLong
     do
-      val ns = layers(l).neurons.flatMap { it => it.bias +: it.weights.toSeq }
-      r ::= Matrix[Float][N[given_Int.type], N[l.type]+1](ns*)
+      val ws = layers(l).neurons.flatMap { it => it.bias +: it.weights.toSeq }
+      r ::= Matrix[Float][N[given_Int.type], N[l.type]+1](ws*)
     r
 
   /**
@@ -59,7 +59,7 @@ case class Network[
   /**
     * train
     */
-  def apply(data: Data[N[0], N[L]], epochs: Long = Long.MaxValue, error: Option[Float] = None): (Long, Float) =
+  def apply(data: Data[N[0], N[M]], epochs: Long = Long.MaxValue, error: Option[Float] = None): (Long, Float) =
     require(epochs >= 0 && error.map(_ > 0).getOrElse(true) && (!error.isDefined || data.io.size == 1))
 
     var count = 0L
@@ -104,16 +104,16 @@ case class Network[
         net = net.reverse
         out = out.reverse
 
-        val y = out(L).asInstanceOf[Vector[Float, N[L]+1]].--
+        val y = out(M).asInstanceOf[Vector[Float, N[M]+1]].--
 
         total = total min loss.apply(output.answer, y)
 
         // BACKPROPAGATION
 
         var delta: Vector[Float, ?] = {
-          given Int = L
+          given Int = M
           Vector[Float][N[given_Int.type]](rows.map(loss.partial(output.answer, y)(_))*)
-        ⊙ prime(given_Int)(net(L-1).asInstanceOf[Vector[Float, N[given_Int.type]]])
+        ⊙ prime(given_Int)(net(M-1).asInstanceOf[Vector[Float, N[given_Int.type]]])
         }
 
         for
@@ -165,7 +165,7 @@ case class Network[
   /**
     * predict
     */
-  def apply(input: Input[N[0]]): Output[N[L]] =
+  def apply(input: Input[N[0]]): Output[N[M]] =
     val weights = this()
 
     var out: Vector[Float, ?] = input.data.++(1)
@@ -179,7 +179,7 @@ case class Network[
       val x = out.asInstanceOf[Vector[Float, N[l.type]+1]]
       out = apply(w ⋅ x).++(1)
 
-    Output(out.asInstanceOf[Vector[Float, N[L]+1]].--)
+    Output(out.asInstanceOf[Vector[Float, N[M]+1]].--)
 
 
 object Network:
@@ -193,6 +193,25 @@ object Network:
   case class Neuron[N <: Int](weights: Vector[Float, N],
                               var bias: Float,
                               activation: Activation)
+
+  object Neuron:
+
+    import Initialization.*
+
+    def apply[I <: Int: ValueOf,
+              O <: Int: ValueOf](initialization: Initialization,
+                                 activation: Activation): Seq[Neuron[I]] =
+      (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), initialization(), activation))
+
+    def xavier[I <: Int: ValueOf,
+               O <: Int: ValueOf](activation: Activation): Seq[Neuron[I]] =
+      val initialization = Xavier(valueOf[I], valueOf[O])
+      (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), initialization(), activation))
+
+    def kaiming[I <: Int: ValueOf,
+                O <: Int: ValueOf](activation: Activation = Activation.ReLU): Seq[Neuron[I]] =
+      val initialization = Kaiming(valueOf[I])
+      (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), initialization(), activation))
 
   case class Layer[N <: Int](neurons: Neuron[N]*):
     require(neurons.nonEmpty)

@@ -6,6 +6,7 @@ import munit.FunSuite
 import spire.implicits.*
 
 import Activation.*
+import Initialization.Gaussian
 import Loss.*
 import Util.{ truncate, given }
 import Network.*
@@ -48,10 +49,6 @@ class NetworkSuite extends FunSuite:
 
   test("XOR https://github.com/lexesj/java-toy-neural-network") {
 
-    val rnd = scala.util.Random
-
-    def ng = rnd.nextGaussian.toFloat
-
     type N[L <: Int] = L match { case 0 => 2 case 1 => 10 case 2 => 1 }
 
     given List[Int] = 2 :: 10 :: 1 :: Nil
@@ -59,21 +56,8 @@ class NetworkSuite extends FunSuite:
     val xor = Network[N, 2](
       loss = MSE[1](),
       learningRate = 3,
-      Layer[2](
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-        Neuron(Vector[Float](ng, ng), ng, Sigmoid),
-      ),
-      Layer[10](
-        Neuron(Vector[Float](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-      ),
+      Layer[2](Neuron[2, 10](Gaussian(), Sigmoid)*),
+      Layer[10](Neuron[10, 1](Gaussian(), Sigmoid)*)
     )
 
     val data = Data[2, 1](Input(Vector[Float][2](0, 0)) -> Output(Vector[Float][1](0)),

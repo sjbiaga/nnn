@@ -6,6 +6,7 @@ import munit.FunSuite
 import spire.implicits.*
 
 import Activation.*
+import Initialization.Gaussian
 import Loss.*
 import Util.{ truncate, given }
 import Network.*
@@ -44,37 +45,11 @@ class NetworkSuite extends FunSuite:
 
   test("XOR https://github.com/lexesj/java-toy-neural-network") {
 
-    val rnd = scala.util.Random
-
-    def ng = rnd.nextGaussian
-
     val xor = Network[10](
       loss = MSE[10](),
       learningRate = 3,
-      Layer[10](
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-      ),
-      Layer[10](
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sigmoid),
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-        Neuron(Vector[Double][10](ng, ng, ng, ng, ng, ng, ng, ng, ng, ng), ng, Sign), // ignored
-      ),
+      Layer[10](Neuron[10, 10](Gaussian(), Sigmoid)*),
+      Layer[10]((Neuron[10, 1](Gaussian(), Sigmoid) ++ Neuron[10, 9](Gaussian(), Sign))*)
     )
 
     val data = Data[10](Input(Vector[Double][10](0, 0, 0, 0, 0, 0, 0, 0, 0, 0)) -> Output(Vector[Double][10](0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),

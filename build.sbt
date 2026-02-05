@@ -18,7 +18,7 @@ lazy val root = (project in file("."))
     scalaVersion := "3.8.1-RC1",
     crossScalaVersions ++= Seq("2.13.18", "3.8.1-RC1"),
     scalacOptions ++= scala3Opts, // :+ "-Xprint:typer",
-    libraryDependencies ++= Seq(spire, munit % Test)
+    libraryDependencies ++= Seq(breeze, spire, munit % Test)
   )
 
 // ThisBuild / evictionErrorLevel := Level.Info

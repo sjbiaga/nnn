@@ -145,5 +145,24 @@ object Network:
                               var bias: Double,
                               activation: Activation)
 
+  object Neuron:
+
+    import Initialization.*
+
+    def apply[I <: Int: ValueOf,
+              O <: Int: ValueOf](initialization: Initialization,
+                                 activation: Activation): Seq[Neuron[I]] =
+      (1 to valueOf[O]).map(_ => Neuron(Vector[Double][I](initialization), initialization(), activation))
+
+    def xavier[I <: Int: ValueOf,
+               O <: Int: ValueOf](activation: Activation): Seq[Neuron[I]] =
+      val initialization = Xavier(valueOf[I], valueOf[O])
+      (1 to valueOf[O]).map(_ => Neuron(Vector[Double][I](initialization), initialization(), activation))
+
+    def kaiming[I <: Int: ValueOf,
+                O <: Int: ValueOf](activation: Activation = Activation.ReLU): Seq[Neuron[I]] =
+      val initialization = Kaiming(valueOf[I])
+      (1 to valueOf[O]).map(_ => Neuron(Vector[Double][I](initialization), initialization(), activation))
+
   case class Layer[N <: Int](neurons: Neuron[N]*):
     require(neurons.nonEmpty)

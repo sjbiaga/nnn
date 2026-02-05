@@ -339,6 +339,16 @@ object Matrix:
 
       Matrix[A, M, N](elements.sliding(valueOf[N], valueOf[N]).map(_.toArray).toArray)
 
+    def apply[M <: Int: ValueOf, N <: Int: ValueOf](producer: (Int, Int) => A): Matrix[A, M, N] =
+      require(valueOf[M] > 0 && valueOf[N] > 0)
+
+      apply[M, N]((0 until valueOf[M]).map(i => (0 until valueOf[N]).map(j => producer(i, j))).flatten.toSeq*)
+
+    def apply[M <: Int: ValueOf, N <: Int: ValueOf](initialization: Initialization)(using Conversion[Double, A]): Matrix[A, M, N] =
+      require(valueOf[M] > 0 && valueOf[N] > 0)
+
+      apply[M, N]((0 until valueOf[M]).map(_ => (0 until valueOf[N]).map(_ => initialization())).flatten.toSeq*)
+
     def one[M <: Int: ValueOf, N <: Int: ValueOf]: Matrix[A, M, N] =
       require(valueOf[M] > 0 && valueOf[N] > 0)
 

@@ -190,6 +190,16 @@ object Vector:
 
       Vector[A, N](elements.toArray)
 
+    def apply[N <: Int: ValueOf](producer: Int => A): Vector[A, N] =
+      require(valueOf[N] > 0)
+
+      apply[N]((0 until valueOf[N]).map(i => producer(i)).toSeq*)
+
+    def apply[N <: Int: ValueOf](initialization: Initialization)(using Conversion[Double, A]): Vector[A, N] =
+      require(valueOf[N] > 0)
+
+      apply[N]((0 until valueOf[N]).map(_ => initialization()).toSeq*)
+
     def zero[N <: Int: ValueOf]: Vector[A, N] =
       require(valueOf[N] > 0)
 
