@@ -74,7 +74,7 @@ case class Network[
       var nabla: List[Matrix[Float, ?, ?]] = Nil
 
       for
-        given Int <- cols
+        given Int <- cols.reverse
         l = given_Int-1
         given Long = l.toLong
       do
