@@ -23,11 +23,11 @@ class NetworkSuite extends FunSuite:
     val nn = Network[N, 2](
       loss = MSE[2](),
       learningRate = 0.5,
-      Layer[2](
+      Layer[2, 2](
         Neuron(Vector[Float](.15, .20), .35, Sigmoid),
         Neuron(Vector[Float](.25, .30), .35, Sigmoid),
       ),
-      Layer[2](
+      Layer[2, 2](
         Neuron(Vector[Float](.40, .45), .60, Sigmoid),
         Neuron(Vector[Float](.50, .55), .60, Sigmoid),
       )
@@ -56,8 +56,8 @@ class NetworkSuite extends FunSuite:
     val xor = Network[N, 2](
       loss = MSE[1](),
       learningRate = 3,
-      Layer[2](Neuron[2, 10](Gaussian(), Sigmoid)*),
-      Layer[10](Neuron[10, 1](Gaussian(), Sigmoid)*)
+      Layer[2, 10](Neuron[2, 10](Gaussian(), Sigmoid)*),
+      Layer[10, 1](Neuron[10, 1](Gaussian(), Sigmoid)*)
     )
 
     val data = Data[2, 1](Input(Vector[Float][2](0, 0)) -> Output(Vector[Float][1](0)),

@@ -18,10 +18,10 @@ case class Network[
   protected given ValueOf[N+1] = ValueOf[N+1]((valueOf[N]+1).asInstanceOf[N+1])
 
   val N = valueOf[N]
-  val L = layers.size
+  val M = layers.size
 
   val rows = 0 until N
-  val cols = 0 until L
+  val cols = 0 until M
 
   /**
     * (bias and) weights matrices
@@ -61,9 +61,14 @@ case class Network[
     do
       count += 1
 
-      val weights = this()
+      var nabla: List[Matrix[Double, N, N+1]] = Nil
 
-      var nabla = List.fill(cols.size)(Matrix[Double].zero[N, N+1])
+      for
+        _ <- cols
+      do
+        nabla ::= Matrix[Double].zero[N, N+1]
+
+      val weights = this()
 
       for
         (input, output) <- data.io
@@ -82,14 +87,14 @@ case class Network[
         net = net.reverse
         out = out.reverse
 
-        val y = out(L).--
+        val y = out(M).--
 
         total = total min loss.apply(output.answer, y)
 
         // BACKPROPAGATION
 
         var delta = Vector[Double](rows.map(loss.partial(output.answer, y)(_))*)
-                  ⊙ prime(L-1, net(L-1))
+                  ⊙ prime(M-1, net(M-1))
 
         for
           l <- cols.tail.reverse
@@ -164,5 +169,5 @@ object Network:
       val initialization = Kaiming(valueOf[I])
       (1 to valueOf[O]).map(_ => Neuron(Vector[Double][I](initialization), initialization(), activation))
 
-  case class Layer[N <: Int](neurons: Neuron[N]*):
-    require(neurons.nonEmpty)
+  case class Layer[N <: Int: ValueOf](neurons: Neuron[N]*):
+    require(valueOf[N] == neurons.size)

@@ -27,6 +27,7 @@ case class Vector[
     case _ => false
 
   val rows = underlying.size
+  val cols = rows
 
   def apply(i: Int): A =
     require(0 <= i && i < rows)
@@ -85,7 +86,7 @@ case class Vector[
     val result = Array.fill(this.rows, that.rows)(Ring[A].zero)
     for
       i <- 0 until this.rows
-      j <- 0 until that.rows
+      j <- 0 until that.cols
     do
       result(i)(j) = this.underlying(i) * that.underlying(j)
     Matrix[A, N, M](result)

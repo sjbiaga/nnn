@@ -14,7 +14,7 @@ case class Network[
   M <: Int: ValueOf
 ](loss: Loss[N[M]],
   learningRate: Float,
-  layers: Layer[?]*)
+  layers: Layer[?, ?]*)
   (using shape: List[Int]):
   require(valueOf[M] == layers.size)
 
@@ -71,16 +71,16 @@ case class Network[
     do
       count += 1
 
-      val weights = this()
-
       var nabla: List[Matrix[Float, ?, ?]] = Nil
 
       for
-        given Int <- cols.reverse
+        given Int <- cols
         l = given_Int-1
         given Long = l.toLong
       do
         nabla ::= Matrix[Float].zero[N[given_Int.type], N[l.type]+1]
+
+      val weights = this()
 
       for
         (input, output) <- data.io
@@ -213,5 +213,5 @@ object Network:
       val initialization = Kaiming(valueOf[I])
       (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), initialization(), activation))
 
-  case class Layer[N <: Int](neurons: Neuron[N]*):
-    require(neurons.nonEmpty)
+  case class Layer[N <: Int, O <: Int: ValueOf](neurons: Neuron[N]*):
+    require(valueOf[O] == neurons.size)
