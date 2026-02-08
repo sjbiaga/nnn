@@ -16,7 +16,6 @@ case class Network[
   learningRate: Float,
   layers: Layer[?, ?]*)
   (using shape: List[Int]):
-  require(valueOf[M] == layers.size)
 
   // given_Int is the current layer (L) in which each neuron has shape(given_Long.toInt) weights (plus bias)
   protected implicit def _valueOf[L <: Int](using l: Int): ValueOf[N[L]] = ValueOf(shape(l).asInstanceOf[N[L]])
@@ -28,6 +27,12 @@ case class Network[
 
   def rows(using l: Int) = 0 until layers(l-1).neurons.size
   val cols = 1 to M
+
+  require(valueOf[M] == layers.size)
+
+  val softmax_cross_entropy = layers(M-1).isInstanceOf[Softmax[?]]
+
+  if softmax_cross_entropy then require(loss.isInstanceOf[Loss.CCE[N[M]]])
 
   /**
     * (bias and) weights matrices
@@ -47,7 +52,11 @@ case class Network[
     * applies each neuron's activation function to each net output
     */
   def apply(using l: Int)(net: Vector[Float, N[l.type]]): Vector[Float, N[l.type]] =
-    Vector[Float]((layers(l-1).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
+    if softmax_cross_entropy && l == M
+    then
+      layers(M-1).neurons(0).activation.apply(net)
+    else
+      Vector[Float]((layers(l-1).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
 
   /**
     * applies each neuron's activation derivative function to each net output
@@ -104,17 +113,22 @@ case class Network[
         net = net.reverse
         out = out.reverse
 
-        val y = out(M).asInstanceOf[Vector[Float, N[M]+1]].--
+        val y = output.answer
+        val ŷ = out(M).asInstanceOf[Vector[Float, N[M]+1]].--
 
-        total = total min loss.apply(output.answer, y)
+        total = total min loss.apply(y, ŷ)
 
         // BACKPROPAGATION
 
-        var delta: Vector[Float, ?] = {
-          given Int = M
-          Vector[Float][N[given_Int.type]](rows.map(loss.partial(output.answer, y)(_))*)
-        ⊙ prime(given_Int)(net(M-1).asInstanceOf[Vector[Float, N[given_Int.type]]])
-        }
+        var delta: Vector[Float, ?] =
+          if softmax_cross_entropy
+          then
+            ŷ - y
+          else {
+            given Int = M
+            Vector[Float][N[given_Int.type]](rows.map(loss.partial(y, ŷ)(_))*)
+          ⊙ prime(given_Int)(net(M-1).asInstanceOf[Vector[Float, N[given_Int.type]]])
+          }
 
         for
           given Int <- cols.tail.reverse
@@ -215,3 +229,6 @@ object Network:
 
   case class Layer[N <: Int, O <: Int: ValueOf](neurons: Neuron[N]*):
     require(valueOf[O] == neurons.size)
+
+  class Softmax[N <: Int: ValueOf](initialization: Initialization)
+      extends Layer[N, N](Neuron[N, N](initialization, Activation.Softmax)*)

@@ -22,13 +22,19 @@ enum Loss[N <: Int: ValueOf](val apply: (Vector[Real, N], Vector[Real, N]) => Re
                                                 { (ideal, real) => i => -(Real(1) / valueOf[N]) * (ideal(i) / real(i) - (Real(1) - ideal(i)) / (Real(1) - real(i))) })
 
   /**
+    * Categorical Cross Entropy
+    */
+  case CCE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => -(ideal.underlying zip real.underlying).map(_ * log(_)).sum },
+                                                { (ideal, real) => i => real(i) - ideal(i) })
+
+  /**
     * Mean Squared Error
     */
-  case MSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (Real(1) / valueOf[N]) * (ideal + real.op(-_)).op(sqr).sum },
+  case MSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (Real(1) / valueOf[N]) * (ideal - real).op(sqr(_)).sum },
                                                 { (ideal, real) => i => (Real(2) / valueOf[N]) * (real(i) - ideal(i)) })
 
   /**
     * Sum of Squares Error
     */
-  case SSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (ideal + real.op(-_)).op(sqr).sum },
+  case SSE[N <: Int: ValueOf]() extends Loss[N]({ (ideal, real) => (ideal - real).op(sqr(_)).sum },
                                                 { (ideal, real) => i => 2 * (real(i) - ideal(i)) })

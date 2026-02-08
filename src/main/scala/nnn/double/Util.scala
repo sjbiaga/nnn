@@ -12,6 +12,9 @@ object Util:
 
   inline def sqr[A: Ring](x: A): A = x.pow(2)
 
+  inline def kronecker(i: Int)(j: Int): Double =
+    if i == j then 1d else 0d
+
   given [N: Numeric]: Conversion[N, Double] with
     def apply(self: N): Double = self match
       case it: Int    => it.toDouble
@@ -26,3 +29,14 @@ object Util:
   extension [N <: Int: ValueOf](self: Vector[Double, N])
     def truncate(n: Int): Vector[Double, N] =
       self.op { it => (it * 10d.pow(n)).toInt.toDouble / 10d.pow(n) }
+
+  object softmax:
+
+    def apply[N <: Int](z: Vector[Double, N]): Vector[Double, N] =
+      val x = z.op(exp(_))
+      x.op(_ / x.sum)
+
+    def prime[N <: Int](z: Vector[Double, N])(k: Int): Vector[Double, N] =
+      val q = apply(z)
+      val qk = q(k)
+      q.op { (qi, i) => qk * (kronecker(i)(k) - qi) }

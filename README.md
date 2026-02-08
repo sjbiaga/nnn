@@ -21,8 +21,8 @@ because `A` differs from `B`, respectively, `N` differs from `P`.
 `N` Neural Network
 ------------------
 
-A neural network `Network[N, N1]` is composed of `L`-layers each of `N` neurons,
-while `N1` corressponds to number `N` plus `1` (for the bias). For arbitrary
+A neural network `Network[N]` is composed of `M` layers each of `N` neurons, while
+`N+1` is the number of weights per neuron plus `1` (for the bias). For arbitrary
 precision arithmetic using `spire.math.Real`, for instance, each neuron of type
 `Neuron[N]` has a `Vector[Real, N]` of weights, a `Real` bias and an `Activation`
 function, where the latter is a Scala3 `enum`. This means that the `Activation`

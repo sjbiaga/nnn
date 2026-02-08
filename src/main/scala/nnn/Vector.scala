@@ -63,6 +63,12 @@ case class Vector[
     op2(that)(_ + _)
 
   /**
+    * subtraction
+    */
+  def -(that: Vector[A, N]): Vector[A, N] =
+    op2(that)(_ - _)
+
+  /**
     * alias for dot product
     */
   inline def apply(that: Vector[A, N]): A =
@@ -106,6 +112,17 @@ case class Vector[
       k <- 0 until rows
     do
       result(k) = fun(underlying(k))
+    Vector[B, N](result)
+
+  /**
+    * unary operation w/ index
+    */
+  def op[B: Ring: ClassTag](fun: (A, Int) => B): Vector[B, N] =
+    val result = Array.fill(rows)(Ring[B].zero)
+    for
+      k <- 0 until rows
+    do
+      result(k) = fun(underlying(k), k)
     Vector[B, N](result)
 
   /**
@@ -154,7 +171,6 @@ case class Vector[
     do
       result(k-1) = underlying(k)
     Vector[A, N-1](result)
-
 
   def to[B: Ring: ClassTag](using c: Conversion[A, B]): Vector[B, N] =
     val result = Array.fill(rows)(Ring[B].zero)

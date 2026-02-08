@@ -24,6 +24,10 @@ case class Network[
   val rows = 0 until N
   val cols = 0 until M
 
+  val softmax_cross_entropy = layers(M-1).isInstanceOf[Softmax[?]]
+
+  if softmax_cross_entropy then require(loss.isInstanceOf[Loss.CCE[N]])
+
   /**
     * (bias and) weights matrices
     */
@@ -39,7 +43,11 @@ case class Network[
     * applies each neuron's activation function to each net output
     */
   def apply(l: Int, net: Vector[Real, N]): Vector[Real, N] =
-    Vector[Real]((layers(l).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
+    if softmax_cross_entropy && l == M-1
+    then
+      layers(M-1).neurons(0).activation.apply(net)
+    else
+      Vector[Real]((layers(l).neurons.map(_.activation) zip net.toSeq).map(_.apply(_))*)
 
   /**
     * applies each neuron's activation derivative function to each net output
@@ -88,14 +96,20 @@ case class Network[
         net = net.reverse
         out = out.reverse
 
-        val y = out(M).--
+        val y = output.answer
+        val ŷ = out(M).--
 
-        total = total min loss.apply(output.answer, y)
+        total = total min loss.apply(y, ŷ)
 
         // BACKPROPAGATION
 
-        var delta = Vector[Real](rows.map(loss.partial(output.answer, y)(_))*)
-                  ⊙ prime(M-1, net(M-1))
+        var delta =
+          if softmax_cross_entropy
+          then
+            ŷ - y
+          else
+            Vector[Real](rows.map(loss.partial(y, ŷ)(_))*)
+          ⊙ prime(M-1, net(M-1))
 
         for
           l <- cols.tail.reverse
@@ -172,3 +186,6 @@ object Network:
 
   case class Layer[N <: Int: ValueOf](neurons: Neuron[N]*):
     require(valueOf[N] == neurons.size)
+
+  class Softmax[N <: Int: ValueOf](initialization: Initialization)
+      extends Layer[N](Neuron[N, N](initialization, Activation.Softmax)*)

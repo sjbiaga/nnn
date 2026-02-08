@@ -72,6 +72,12 @@ case class Matrix[
     op2(that)(_ + _)
 
   /**
+    * subtraction
+    */
+  def -(that: Matrix[A, M, N]): Matrix[A, M, N] =
+    op2(that)(_ - _)
+
+  /**
     * alias for multiplication using dot product
     */
   inline def apply[P <: Int](that: Matrix[A, N, P]): Matrix[A, M, P] =
