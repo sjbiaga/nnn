@@ -51,9 +51,13 @@ enum Activation(val apply: Float => Float,
   case Softmax extends Activation(x => softmax.apply(Vector[Float][1](x))(0),
                                   x => softmax.prime(Vector[Float][1](x))(0)(0))
 
+  case LogSoftmax extends Activation(x => logsoftmax.apply(Vector[Float][1](x))(0),
+                                     x => logsoftmax.prime(Vector[Float][1](x))(0)(0))
+
   inline def apply[N <: Int](z: Vector[Float, N]): Vector[Float, N] =
     this match
       case Softmax => softmax.apply(z)
+      case LogSoftmax => logsoftmax.apply(z)
       case _ =>
         require(z.rows == 1)
         z.op(apply(_))
@@ -61,6 +65,7 @@ enum Activation(val apply: Float => Float,
   inline def prime[N <: Int](z: Vector[Float, N])(k: Int): Vector[Float, N] = // unused
     this match
       case Softmax => softmax.prime(z)(k)
+      case LogSoftmax => logsoftmax.prime(z)(k)
       case _ =>
         require(z.rows == 1 && k == 0)
         z.op(prime(_))

@@ -1,6 +1,6 @@
 package nnn
 
-import scala.compiletime.ops.int.{ +, - }
+import scala.compiletime.ops.int.{ +, -, / }
 
 import scala.reflect.ClassTag
 
@@ -36,11 +36,12 @@ case class Vector[
   def apply[I <: Int: ValueOf](): A =
     apply(valueOf[I])
 
-  def update(i: Int, it: A): Unit =
+  def update(i: Int, it: A): this.type =
     require(0 <= i && i < rows)
     underlying(i) = it
+    this
 
-  def update[I <: Int: ValueOf](it: A): Unit =
+  def update[I <: Int: ValueOf](it: A): this.type =
     update(valueOf[I], it)
 
   def sum: A = underlying.reduce(_ + _)
@@ -126,10 +127,13 @@ case class Vector[
     Vector[B, N](result)
 
   /**
-    * transpose
+    * reshape
     */
-  def unary_~ : Matrix[A, 1, N] =
-    Matrix[A, 1, N](Array(underlying.toArray))
+  def reshape[M <: Int: ValueOf]: Matrix[A, M, N/M] =
+    val M = valueOf[M]
+    require(rows % M == 0)
+    given ValueOf[N/M] = ValueOf[N/M]((rows/M).asInstanceOf[N/M])
+    Matrix[A][M, N/M](toSeq*)
 
   /**
     * unsafe assignment
@@ -180,6 +184,9 @@ case class Vector[
       result(k) = c(underlying(k))
     Vector[B, N](result)
 
+  /**
+    * flatten
+    */
   def toSeq: Seq[A] = underlying.toSeq
 
   override def toString: String = underlying.mkString("[", ", ", "]")
@@ -192,6 +199,10 @@ object Vector:
   given [A: Ring: ClassTag, N <: Int]: Conversion[Vector[A, N], Matrix[A, 1, N]] with
     def apply(self: Vector[A, N]): Matrix[A, 1, N] =
       Matrix[A, 1, N](Array(self.underlying.toArray))
+
+  given NtoN1[A: Ring: ClassTag, N <: Int]: Conversion[Vector[A, N], Matrix[A, N, 1]] with
+    def apply(self: Vector[A, N]): Matrix[A, N, 1] =
+      Matrix[A, N, 1](self.underlying.map(Array(_)))
 
   given [A]: Conversion[Vector[A, 1], A] with
     def apply(self: Vector[A, 1]): A =
@@ -216,6 +227,11 @@ object Vector:
       require(valueOf[N] > 0)
 
       apply[N]((0 until valueOf[N]).map(_ => initialization()).toSeq*)
+
+    def one[N <: Int: ValueOf]: Vector[A, N] =
+      require(valueOf[N] > 0)
+
+      apply[N](Seq.fill(valueOf[N])(Ring[A].one)*)
 
     def zero[N <: Int: ValueOf]: Vector[A, N] =
       require(valueOf[N] > 0)

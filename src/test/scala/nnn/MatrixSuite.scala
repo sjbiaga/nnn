@@ -207,3 +207,13 @@ class MatrixSuite extends FunSuite:
 
     assertEquals(-m, n)
   }
+
+  test("vector reshape") {
+    val n = Vector[Int][9](1, 3, 5, -4, 0, -3, 5, 7, -9)
+
+    val m = Matrix[Int][3, 3]( 1, 3,  5,
+                              -4, 0, -3,
+                               5, 7, -9)
+
+    assertEquals(n.reshape[3], m)
+  }

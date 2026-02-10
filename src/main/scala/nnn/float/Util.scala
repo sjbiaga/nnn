@@ -44,3 +44,13 @@ object Util:
       val q = apply(z)
       val qk = q(k)
       q.op { (qi, i) => qk * (kronecker(i)(k) - qi) }
+
+  object logsoftmax:
+
+    def apply[N <: Int](x: Vector[Float, N]): Vector[Float, N] =
+      val l = log(x.op(exp(_)).sum)
+      x.op(_ - l)
+
+    def prime[N <: Int](z: Vector[Float, N])(k: Int): Vector[Float, N] =
+      val xk = softmax.apply(z)(k)
+      z.op { (_, i) => kronecker(i)(k) - xk }

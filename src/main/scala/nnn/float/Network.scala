@@ -33,6 +33,11 @@ case class Network[
   val softmax_cross_entropy = layers(M-1).isInstanceOf[Softmax[?]]
 
   if softmax_cross_entropy then require(loss.isInstanceOf[Loss.CCE[N[M]]])
+  if softmax_cross_entropy then require {
+    layers(M-1).neurons(0).activation match
+      case Activation.Softmax | Activation.LogSoftmax => true
+      case _ => false
+  }
 
   /**
     * (bias and) weights matrices
@@ -146,7 +151,6 @@ case class Network[
 
         {
           given Int = 1
-          given Long = 0L
 
           val ∇ = nabla(0).asInstanceOf[Matrix[Float, N[given_Int.type], N[0]+1]]
           val δ = delta.asInstanceOf[Vector[Float, N[given_Int.type]]]
@@ -230,5 +234,6 @@ object Network:
   case class Layer[N <: Int, O <: Int: ValueOf](neurons: Neuron[N]*):
     require(valueOf[O] == neurons.size)
 
-  class Softmax[N <: Int: ValueOf](initialization: Initialization)
-      extends Layer[N, N](Neuron[N, N](initialization, Activation.Softmax)*)
+  class Softmax[N <: Int: ValueOf](initialization: Initialization,
+                                   activation: Activation = Activation.Softmax)
+      extends Layer[N, N](Neuron[N, N](initialization, activation)*)

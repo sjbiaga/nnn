@@ -44,11 +44,12 @@ case class Matrix[
   def apply[I <: Int: ValueOf, J <: Int: ValueOf](): A =
     apply(valueOf[I], valueOf[J])
 
-  def update(ij: (Int, Int), it: A): Unit =
+  def update(ij: (Int, Int), it: A): this.type =
     require(0 <= ij._1 && ij._1 < rows && 0 <= ij._2 && ij._2 < cols)
     underlying(ij._1)(ij._2) = it
+    this
 
-  def update[I <: Int: ValueOf, J <: Int: ValueOf](it: A): Unit =
+  def update[I <: Int: ValueOf, J <: Int: ValueOf](it: A): this.type =
     update(valueOf[I] -> valueOf[J], it)
 
   def sum: A = underlying.map(_.reduce(_ + _)).reduce(_ + _)
@@ -315,6 +316,9 @@ case class Matrix[
       result(i)(j) = c(underlying(i)(j))
     Matrix[B, M, N](result)
 
+  /**
+    * flatten
+    */
   def unary_- : Vector[A, M*N] =
     Vector[A, M*N](underlying.flatten.toArray)
 
@@ -330,6 +334,10 @@ object Matrix:
   given [A: Ring: ClassTag, N <: Int]: Conversion[Matrix[A, 1, N], Vector[A, N]] with
     def apply(self: Matrix[A, 1, N]): Vector[A, N] =
       Vector[A, N](self.underlying(0).toArray)
+
+  given N1toN[A: Ring: ClassTag, N <: Int]: Conversion[Matrix[A, N, 1], Vector[A, N]] with
+    def apply(self: Matrix[A, N, 1]): Vector[A, N] =
+      Vector[A, N](self.underlying.flatten)
 
   given [A]: Conversion[Matrix[A, 1, 1], A] with
     def apply(self: Matrix[A, 1, 1]): A =

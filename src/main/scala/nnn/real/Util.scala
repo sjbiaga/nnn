@@ -12,8 +12,8 @@ object Util:
 
   inline def sqr[A: Ring](x: A): A = x.pow(2)
 
-  inline def kronecker(i: Int)(j: Int): Double =
-    if i == j then 1d else 0d
+  inline def kronecker(i: Int)(j: Int): Real =
+    if i == j then 1 else 0
 
   given [N: Numeric]: Conversion[N, Real] with
     def apply(self: N): Real = self match
@@ -38,3 +38,13 @@ object Util:
       val q = apply(z)
       val qk = q(k)
       q.op { (qi, i) => qk * (kronecker(i)(k) - qi) }
+
+  object logsoftmax:
+
+    def apply[N <: Int](x: Vector[Real, N]): Vector[Real, N] =
+      val l = log(x.op(exp(_)).sum)
+      x.op(_ - l)
+
+    def prime[N <: Int](z: Vector[Real, N])(k: Int): Vector[Real, N] =
+      val xk = softmax.apply(z)(k)
+      z.op { (_, i) => kronecker(i)(k) - xk }
