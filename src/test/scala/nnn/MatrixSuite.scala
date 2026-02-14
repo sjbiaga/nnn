@@ -143,9 +143,10 @@ class MatrixSuite extends FunSuite:
     val m = Matrix[Int][2, 3](23, 14, 25,
                               27, 29, 35)
 
+    val max = Matrix[(Int, Int)][1, 2]((1, 1), (1, 2))
     val n = Matrix[Int][1, 2](29, 35)
 
-    assertEquals(m.max[2, 2](Int.MinValue), n)
+    assertEquals(m.max[2, 2](Int.MinValue), max->n)
   }
 
   test("matrix max-pooling w/ stride 1") {
@@ -157,13 +158,19 @@ class MatrixSuite extends FunSuite:
                               8, 0, 1, 0, 6, 0, 0,
                               6, 4, 1, 3, 0, 4, 5)
 
+    val max = Matrix[(Int, Int)][5, 5]((1,1), (1,1), (0,4), (0,4), (0,4),
+                                       (1,1), (1,1), (3,2), (2,5), (3,6),
+                                       (4,1), (4,1), (3,2), (2,5), (3,6),
+                                       (4,1), (4,1), (5,4), (5,4), (3,6),
+                                       (4,1), (4,1), (5,4), (5,4), (5,4))
+
     val n = Matrix[Int][5, 5](7, 7, 5, 5, 5,
                               7, 7, 5, 5, 7,
                               8, 8, 5, 5, 7,
                               8, 8, 6, 6, 7,
                               8, 8, 6, 6, 6)
 
-    assertEquals(m[1].max[3, 3](Int.MinValue), n)
+    assertEquals(m[1].max[3, 3](Int.MinValue), max->n)
   }
 
   test("matrix max-pooling w/ stride 2") {
@@ -175,11 +182,15 @@ class MatrixSuite extends FunSuite:
                               8, 0, 1, 0, 6, 0, 0,
                               6, 4, 1, 3, 0, 4, 5)
 
+    val max = Matrix[(Int, Int)][3, 3]((1,1), (0,4), (0,4),
+                                       (4,1), (3,2), (3,6),
+                                       (4,1), (5,4), (5,4))
+
     val n = Matrix[Int][3, 3](7, 5, 5,
                               8, 5, 7,
                               8, 6, 6)
 
-    assertEquals(m[2].max[3, 3](Int.MinValue), n)
+    assertEquals(m[2].max[3, 3](Int.MinValue), max->n)
   }
 
   test("matrix average-pooling w/ stride 2") {
@@ -216,4 +227,68 @@ class MatrixSuite extends FunSuite:
                                5, 7, -9)
 
     assertEquals(n.reshape[3], m)
+  }
+
+  test("juxtapose vectors") {
+    val ns = Seq(Vector[Int][3](1, 3, 5), Vector[Int][3](-4, 0, -3), Vector[Int][3](5, 7, -9))
+
+    val m = Matrix[Int][3, 3](1, -4,  5,
+                              3,  0,  7,
+                              5, -3, -9)
+
+    assertEquals(Matrix[Int].juxtapose[3, 3](ns*), m)
+  }
+
+  test("diagonalize matrices") {
+    val m = Matrix[Int][4, 3](6, 3, 4,
+                              4, 7, 4,
+                              7, 0, 2,
+                              3, 7, 5)
+
+    val n = Matrix[Int][4, 3](3, 7, 5,
+                              5, 8, 1,
+                              8, 0, 1,
+                              6, 4, 1)
+
+    val p = Matrix[Int][4, 3](0, 3, 0,
+                              2, 5, 4,
+                              8, 0, 1,
+                              3, 0, 4)
+
+    val r = Matrix[Int][12, 9](6, 3, 4, 0, 0, 0, 0, 0, 0,
+                               4, 7, 4, 0, 0, 0, 0, 0, 0,
+                               7, 0, 2, 0, 0, 0, 0, 0, 0,
+                               3, 7, 5, 0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 3, 7, 5, 0, 0, 0,
+                               0, 0, 0, 5, 8, 1, 0, 0, 0,
+                               0, 0, 0, 8, 0, 1, 0, 0, 0,
+                               0, 0, 0, 6, 4, 1, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0, 0, 3, 0,
+                               0, 0, 0, 0, 0, 0, 2, 5, 4,
+                               0, 0, 0, 0, 0, 0, 8, 0, 1,
+                               0, 0, 0, 0, 0, 0, 3, 0, 4)
+
+    assertEquals(Matrix[Int].diagonalize(m, n, p)[3], r)
+  }
+
+  test("matrix ʹ.⋆ matrix w/ stride 2") {
+    val m = Matrix[Int][7, 7](6, 3, 4, 4, 5, 0, 3,
+                              4, 7, 4, 0, 4, 0, 4,
+                              7, 0, 2, 3, 4, 5, 2,
+                              3, 7, 5, 0, 3, 0, 7,
+                              5, 8, 1, 2, 5, 4, 2,
+                              8, 0, 1, 0, 6, 0, 0,
+                              6, 4, 1, 3, 0, 4, 5)
+
+    val n = Matrix[Int][9, 9](6, 3, 4, 4, 7, 4, 7, 0, 2,
+                              4, 4, 5, 4, 0, 4, 2, 3, 4,
+                              5, 0, 3, 4, 0, 4, 4, 5, 2,
+                              7, 0, 2, 3, 7, 5, 5, 8, 1,
+                              2, 3, 4, 5, 0, 3, 1, 2, 5,
+                              4, 5, 2, 3, 0, 7, 5, 4, 2,
+                              5, 8, 1, 8, 0, 1, 6, 4, 1,
+                              1, 2, 5, 1, 0, 6, 1, 3, 0,
+                              5, 4, 2, 6, 0, 0, 0, 4, 5)
+
+    assertEquals(m[2].ʹ.⋆[3, 3], n)
   }

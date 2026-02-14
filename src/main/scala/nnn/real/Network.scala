@@ -121,9 +121,9 @@ case class Network[
         do
           nabla(l) += delta ⋅ out(l)
 
-          delta = (~weights(l) ⋅ delta).-- ⊙ prime(l-1, net(l-1))
-
-        nabla(0) += delta ⋅ out(0)
+          if l > 0
+          then
+            delta = (~weights(l) ⋅ delta).-- ⊙ prime(l-1, net(l-1))
 
       // GRADIENT DESCENT
 

@@ -26,8 +26,9 @@ case class Vector[
       b
     case _ => false
 
-  val rows = underlying.size
-  val cols = rows
+  val size = underlying.size
+  val cols = size
+  val rows = size
 
   def apply(i: Int): A =
     require(0 <= i && i < rows)
@@ -99,7 +100,7 @@ case class Vector[
     Matrix[A, N, M](result)
 
   /**
-    * element multiplication
+    * element multiplication (Hadamard product)
     */
   def ⊙(that: Vector[A, N]): Vector[A, N] =
     op2(that)(_ * _)

@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion := "3.8.1-RC1"
+ThisBuild / scalaVersion := "3.8.2-RC2"
 
 val scala2Opts = Seq("-feature", "-language:implicitConversions", "-deprecation", "-Ytasty-reader")
 val scala3Opts = Seq("-feature", "-language:implicitConversions", "-indent", "-Xwiki-syntax", "-Xmax-inlines", "128", "-new-syntax")
@@ -15,8 +15,8 @@ lazy val root = (project in file("."))
     organizationName := "sjbiaga",
     version := "1.0",
     maxErrors := 5,
-    scalaVersion := "3.8.1-RC1",
-    crossScalaVersions ++= Seq("2.13.18", "3.8.1-RC1"),
+    scalaVersion := "3.8.2-RC2",
+    crossScalaVersions ++= Seq("2.13.18", "3.8.2-RC2"),
     scalacOptions ++= scala3Opts, // :+ "-Xprint:typer",
     libraryDependencies ++= Seq(breeze, spire, munit % Test)
   )

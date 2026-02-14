@@ -136,7 +136,7 @@ case class Network[
           }
 
         for
-          given Int <- cols.tail.reverse
+          given Int <- cols.reverse
           l = given_Int-1
           given Long = l.toLong
         do
@@ -146,18 +146,10 @@ case class Network[
 
           nabla(l) := ∇ + δ ⋅ h
 
-          val w = weights(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
-          delta = (~w ⋅ δ).-- ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
-
-        {
-          given Int = 1
-
-          val ∇ = nabla(0).asInstanceOf[Matrix[Float, N[given_Int.type], N[0]+1]]
-          val δ = delta.asInstanceOf[Vector[Float, N[given_Int.type]]]
-          val x = out(0).asInstanceOf[Vector[Float, N[0]+1]]
-
-          nabla(0) := ∇ + δ ⋅ x
-        }
+          if l > 0
+          then
+            val w = weights(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
+            delta = (~w ⋅ δ).-- ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
 
       // GRADIENT DESCENT
 
@@ -174,9 +166,9 @@ case class Network[
           update0 = update(n)(0)
           update1 = update(n).--
         do
-          val w = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]
+          val weights = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]
           layers(l).neurons(n).bias += update0
-          layers(l).neurons(n).weights := w + update1
+          layers(l).neurons(n).weights := weights + update1
 
     count -> total
 

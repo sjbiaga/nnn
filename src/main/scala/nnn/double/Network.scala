@@ -116,13 +116,13 @@ case class Network[
           ⊙ prime(M-1, net(M-1))
 
         for
-          l <- cols.tail.reverse
+          l <- cols.reverse
         do
           nabla(l) += delta ⋅ out(l)
 
-          delta = (~weights(l) ⋅ delta).-- ⊙ prime(l-1, net(l-1))
-
-        nabla(0) += delta ⋅ out(0)
+          if l > 0
+          then
+            delta = (~weights(l) ⋅ delta).-- ⊙ prime(l-1, net(l-1))
 
       // GRADIENT DESCENT
 
