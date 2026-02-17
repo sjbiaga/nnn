@@ -10,6 +10,9 @@ import spire.implicits.*
 import Vector.given
 
 
+/**
+  * Vector of scalars
+  */
 case class Vector[
   A: Ring: ClassTag,
   N <: Int
@@ -133,7 +136,7 @@ case class Vector[
   def reshape[M <: Int: ValueOf]: Matrix[A, M, N/M] =
     val M = valueOf[M]
     require(rows % M == 0)
-    given ValueOf[N/M] = ValueOf[N/M]((rows/M).asInstanceOf[N/M])
+    given ValueOf[N/M] = ValueOf((rows/M).asInstanceOf[N/M])
     Matrix[A][M, N/M](toSeq*)
 
   /**
