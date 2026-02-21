@@ -45,10 +45,13 @@ case class Vector[
     underlying(i) = it
     this
 
-  def update[I <: Int: ValueOf](it: A): this.type =
-    update(valueOf[I], it)
-
-  def sum: A = underlying.reduce(_ + _)
+  def sum: A =
+    var r = Ring[A].zero
+    for
+      i <- 0 until rows
+    do
+      r += underlying(i)
+    r
 
   /**
     * binary operation

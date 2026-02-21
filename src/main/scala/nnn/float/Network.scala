@@ -73,14 +73,14 @@ case class Network[
   /**
     * train
     */
-  def apply(data: Data[N[0], N[M]], epochs: Long = Long.MaxValue, error: Option[Float] = None): (Long, Float) =
+  def apply(data: Data[N[0], N[M]], epochs: Int = Int.MaxValue, error: Option[Float] = None): (Int, Float) =
     require(epochs >= 0 && error.map(_ > 0).getOrElse(true) && (!error.isDefined || data.io.size == 1))
 
-    var count = 0L
+    var count = 0
     var total: Float = Float.MaxValue
 
     for
-      _ <- 1L to epochs
+      _ <- 1 to epochs
       if error.map(total > _).getOrElse(true)
     do
       count += 1
@@ -107,7 +107,6 @@ case class Network[
         for
           given Int <- cols
           l = given_Int-1
-          given Long = l.toLong
         do
           val w = weights(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
           val x = out.head.asInstanceOf[Vector[Float, N[l.type]+1]]
@@ -138,7 +137,6 @@ case class Network[
         for
           given Int <- cols.reverse
           l = given_Int-1
-          given Long = l.toLong
         do
           val ∇ = nabla(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
           val δ = delta.asInstanceOf[Vector[Float, N[given_Int.type]]]
@@ -156,7 +154,6 @@ case class Network[
       for
         given Int <- cols
         l = given_Int-1
-        given Long = l.toLong
       do
         val ∇ = nabla(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
         val update = ∇.op(-learningRate * _ / data.io.size)
@@ -183,7 +180,6 @@ case class Network[
     for
       given Int <- cols
       l = given_Int-1
-      given Long = l.toLong
     do
       val w = weights(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
       val x = out.asInstanceOf[Vector[Float, N[l.type]+1]]

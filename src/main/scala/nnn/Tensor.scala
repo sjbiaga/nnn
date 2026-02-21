@@ -37,12 +37,12 @@ case class Tensor[
   val depth = underlying(0)(0).size
   val size = rows * cols * depth
 
-  def apply(i: Int): Matrix[A, N, O] =
-    require(0 <= i && i < rows)
-    Matrix[A, N, O](underlying(i).toArray)
+  def apply(k: Int): Matrix[A, M, N] =
+    require(0 <= k && k < depth)
+    Matrix[A, M, N](underlying.map(_.map(_(k))))
 
-  def apply[I <: Int: ValueOf](): Matrix[A, N, O] =
-    apply(valueOf[I])
+  def apply[K <: Int: ValueOf](): Matrix[A, M, N] =
+    apply(valueOf[K])
 
   def apply(i: Int, j: Int): Vector[A, O] =
     require(0 <= i && i < rows && 0 <= j && j < cols)
@@ -63,10 +63,15 @@ case class Tensor[
     underlying(ijk._1)(ijk._2)(ijk._3) = it
     this
 
-  def update[I <: Int: ValueOf, J <: Int: ValueOf, K <: Int: ValueOf](it: A): this.type =
-    update((valueOf[I], valueOf[J], valueOf[K]), it)
-
-  def sum: A = underlying.map(_.map(_.reduce(_ + _)).reduce(_ + _)).reduce(_ + _)
+  def sum: A =
+    var r = Ring[A].zero
+    for
+      i <- 0 until rows
+      j <- 0 until cols
+      k <- 0 until depth
+    do
+      r += underlying(i)(j)(k)
+    r
 
   def reduce(fun: (A, A) => A): Matrix[A, M, N] =
     val result = Array.fill(rows, cols)(Ring[A].zero)
@@ -85,11 +90,11 @@ case class Tensor[
   def op2[B, C: Ring: ClassTag](that: Tensor[B, M, N, O])(fun: (A, B) => C): Tensor[C, M, N, O] =
     val result = Array.fill(rows, cols, depth)(Ring[C].zero)
     for
-      h <- 0 until depth
       i <- 0 until rows
       j <- 0 until cols
+      k <- 0 until depth
     do
-      result(i)(j)(h) += fun(this.underlying(i)(j)(h), that.underlying(i)(j)(h))
+      result(i)(j)(k) += fun(this.underlying(i)(j)(k), that.underlying(i)(j)(k))
     Tensor[C, M, N, O](result)
 
   /**
@@ -105,26 +110,6 @@ case class Tensor[
     op2(that)(_ - _)
 
   /**
-    * alias for multiplication using dot product
-    */
-  inline def apply[P <: Int](that: Tensor[A, N, P, O]): Tensor[A, M, P, O] =
-    this ⋅ that
-
-  /**
-    * multiplication using dot product
-    */
-  def ⋅[P <: Int](that: Tensor[A, N, P, O]): Tensor[A, M, P, O] =
-    val result = Array.fill(this.rows, that.cols, depth)(Ring[A].zero)
-    for
-      h <- 0 until depth
-      i <- 0 until this.rows
-      j <- 0 until that.cols
-      k <- 0 until this.cols
-    do
-      result(i)(j)(h) += this.underlying(i)(k)(h) * that.underlying(k)(j)(h)
-    Tensor[A, M, P, O](result)
-
-  /**
     * element multiplication (Hadamard product)
     */
   def ⊙(that: Tensor[A, M, N, O]): Tensor[A, M, N, O] =
@@ -136,11 +121,11 @@ case class Tensor[
   def op[B: Ring: ClassTag](fun: A => B): Tensor[B, M, N, O] =
     val result = Array.fill(rows, cols, depth)(Ring[B].zero)
     for
-      h <- 0 until depth
       i <- 0 until rows
       j <- 0 until cols
+      k <- 0 until depth
     do
-      result(i)(j)(h) = fun(underlying(i)(j)(h))
+      result(i)(j)(k) = fun(underlying(i)(j)(k))
     Tensor[B, M, N, O](result)
 
   /**
@@ -149,104 +134,12 @@ case class Tensor[
   def op[B: Ring: ClassTag](fun: (A, (Int, Int, Int)) => B): Tensor[B, M, N, O] =
     val result = Array.fill(rows, cols, depth)(Ring[B].zero)
     for
-      h <- 0 until depth
       i <- 0 until rows
       j <- 0 until cols
+      k <- 0 until depth
     do
-      result(i)(j)(h) = fun(underlying(i)(j)(h), (i, j, h))
+      result(i)(j)(k) = fun(underlying(i)(j)(k), (i, j, k))
     Tensor[B, M, N, O](result)
-
-  /**
-    * transpose
-    */
-  def unary_~ : Tensor[A, N, M, O] =
-    val result = Array.fill(cols, rows, depth)(Ring[A].zero)
-    for
-      h <- 0 until depth
-      i <- 0 until cols
-      j <- 0 until rows
-    do
-      result(i)(j)(h) = underlying(j)(i)(h)
-    Tensor[A, N, M, O](result)
-
-  /**
-    * cross-correlation
-    */
-  def ⋆[P <: Int, Q <: Int](that: Tensor[A, P, Q, O]): Tensor[A, M-P+1, N-Q+1, O] =
-    require(that.rows <= this.rows && that.cols <= this.cols)
-    val result = Array.fill(this.rows-that.rows+1, this.cols-that.cols+1, depth)(Ring[A].zero)
-    for
-      h <- 0 until depth
-      i <- 0 until this.rows-that.rows+1
-      j <- 0 until this.cols-that.cols+1
-      k <- 0 until that.rows
-      l <- 0 until that.cols
-    do
-      result(i)(j)(h) += this.underlying(i+k)(j+l)(h) * that.underlying(k)(l)(h)
-    Tensor[A, M-P+1, N-Q+1, O](result)
-
-  /**
-    * 180° rotation
-    */
-  def unary_! : Tensor[A, M, N, O] =
-    val result = Array.fill(rows, cols, depth)(Ring[A].zero)
-    for
-      h <- 0 until depth
-      i <- 0 until rows
-      j <- 0 until cols
-    do
-      result(i)(j)(h) = underlying(rows-i-1)(cols-j-1)(h)
-    Tensor[A, M, N, O](result)
-
-  /**
-    * convolution
-    */
-  def ∗[P <: Int, Q <: Int](that: Tensor[A, P, Q, O]): Tensor[A, M-P+1, N-Q+1, O] =
-    this ⋆ !that
-
-  /**
-    * max-pooling
-    */
-  def max[P <: Int: ValueOf, Q <: Int: ValueOf](min: A)(using Ordering[A]): (Tensor[(Int, Int), M-P+1, N-Q+1, O], Tensor[A, M-P+1, N-Q+1, O]) =
-    val rows = valueOf[P]
-    val cols = valueOf[Q]
-    require(rows <= this.rows && cols <= this.cols)
-    val max = Array.fill(this.rows-rows+1, this.cols-cols+1, depth)((0, 0))
-    val result = Array.fill(this.rows-rows+1, this.cols-cols+1, depth)(min)
-    for
-      h <- 0 until depth
-      i <- 0 until this.rows-rows+1
-      j <- 0 until this.cols-cols+1
-      k <- i until i+rows
-      l <- j until j+cols
-    do
-      if result(i)(j)(h) < this.underlying(k)(l)(h)
-      then
-        max(i)(j)(h) = k -> l
-        result(i)(j)(h) = this.underlying(k)(l)(h)
-    Tensor[(Int, Int), M-P+1, N-Q+1, O](max) -> Tensor[A, M-P+1, N-Q+1, O](result)
-
-  /**
-    * average-pooling
-    */
-  def avg[P <: Int: ValueOf, Q <: Int: ValueOf](using Field[A]): Tensor[A, M-P+1, N-Q+1, O] =
-    val rows = valueOf[P]
-    val cols = valueOf[Q]
-    require(rows <= this.rows && cols <= this.cols)
-    val size = rows * cols
-    val result = Array.fill(this.rows-rows+1, this.cols-cols+1, depth)(Ring[A].zero)
-    for
-      h <- 0 until depth
-      i <- 0 until this.rows-rows+1
-      j <- 0 until this.cols-cols+1
-    do
-      for
-        k <- 0 until rows
-        l <- 0 until cols
-      do
-        result(i)(j)(h) += this.underlying(i+k)(j+l)(h)
-      result(i)(j)(h) /= size
-    Tensor[A, M-P+1, N-Q+1, O](result)
 
   /**
     * w/ stride
@@ -258,32 +151,40 @@ case class Tensor[
     require(stride > 0)
 
     /**
-      * prime
+      * dilation
       */
-    object ʹ:
+    def dilate: Tensor[A, M + (M-1)*(S-1), N + (N-1)*(S-1), O] =
+      val rows = self.rows+(self.rows-1)*(stride-1)
+      val cols = self.cols+(self.cols-1)*(stride-1)
+      val result = Array.fill(rows, cols, depth)(Ring[A].zero)
+      for
+        h <- 0 until depth
+        i <- 0 until rows by stride
+        j <- 0 until cols by stride
+        iʹ = i/stride
+        jʹ = j/stride
+      do
+        result(i)(j)(h) = underlying(iʹ)(jʹ)(h)
+      Tensor[A, M + (M-1)*(S-1), N + (N-1)*(S-1), O](result)
 
-      /**
-        * cross-correlation w/ stride
-        */
-      def ⋆[P <: Int: ValueOf, Q <: Int: ValueOf]: Tensor[A, ((M-P)/S+1)*((N-Q)/S+1), P*Q, O] =
-        val rows = valueOf[P]
-        val cols = valueOf[Q]
-        require(rows <= self.rows && cols <= self.cols)
-        require((self.rows-rows)%stride == 0 && (self.cols-cols)%stride == 0)
-        val result = Array.fill(((self.rows-rows)/stride+1)*((self.cols-cols)/stride+1), rows*cols, depth)(Ring[A].zero)
-        for
-          h <- 0 until depth
-          i <- 0 until self.rows-rows+1 by stride
-          j <- 0 until self.cols-cols+1 by stride
-          iʹ = i/stride
-          jʹ = j/stride
-          m  = iʹ*((self.cols-cols)/stride+1)+jʹ
-          k <- 0 until rows
-          l <- 0 until cols
-          n  = k*cols+l
-        do
-          result(m)(n)(h) = underlying(i+k)(j+l)(h)
-        Tensor[A, ((M-P)/S+1)*((N-Q)/S+1), P*Q, O](result)
+    /**
+      * padding and dilation
+      */
+    def pad_and_dilate[P <: Int: ValueOf, Q <: Int: ValueOf]: Tensor[A, M + 2*(P-1) + (M-1)*(S-1), N + 2*(Q-1) + (N-1)*(S-1), O] =
+      val P = valueOf[P]
+      val Q = valueOf[Q]
+      val rows = self.rows+(self.rows-1)*(stride-1)
+      val cols = self.cols+(self.cols-1)*(stride-1)
+      val result = Array.fill(rows+2*(P-1), cols+2*(Q-1), depth)(Ring[A].zero)
+      for
+        h <- 0 until depth
+        i <- 0 until rows by stride
+        j <- 0 until cols by stride
+        iʹ = i/stride
+        jʹ = j/stride
+      do
+        result(P-1+i)(Q-1+j)(h) = underlying(iʹ)(jʹ)(h)
+      Tensor[A, M + 2*(P-1) + (M-1)*(S-1), N + 2*(Q-1) + (N-1)*(S-1), O](result)
 
     /**
       * cross-correlation w/ stride
@@ -305,15 +206,9 @@ case class Tensor[
       Tensor[A, (M-P)/S+1, (N-Q)/S+1, O](result)
 
     /**
-      * convolution w/ stride
-      */
-    def ∗[P <: Int, Q <: Int](that: Tensor[A, P, Q, O]): Tensor[A, (M-P)/S+1, (N-Q)/S+1, O] =
-      this ⋆ !that
-
-    /**
       * max-pooling w/ stride
       */
-    def max[P <: Int: ValueOf, Q <: Int: ValueOf](min: A)(using Ordering[A]): (Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O],  Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]) =
+    def max[P <: Int: ValueOf, Q <: Int: ValueOf](min: A)(using Ordering[A]): (Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O], Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]) =
       val rows = valueOf[P]
       val cols = valueOf[Q]
       require(rows <= self.rows && cols <= self.cols)
@@ -409,11 +304,6 @@ object Tensor:
     def apply(self: Tensor[A, M, N, 1]): Matrix[A, M, N] =
       Matrix[A, M, N](self.underlying.map(_.flatten))
 
-  given [A: Ring: ClassTag, M <: Int, N <: Int, O <: Int]: Conversion[Tensor[A, M, N, O], Vector[A, M*N*O]] with
-    def apply(self: Tensor[A, M, N, O]): Vector[A, M*N*O] =
-      given ValueOf[M*N*O] = ValueOf(self.size.asInstanceOf[M*N*O])
-      Vector[A][M*N*O](self.toSeq.map(_.flatten).flatten*)
-
   given [A]: Conversion[Tensor[A, 1, 1, 1], A] with
     def apply(self: Tensor[A, 1, 1, 1]): A =
       self.underlying(0)(0)(0)
@@ -484,22 +374,22 @@ object Tensor:
 
       apply[M, N, O](Seq.fill(valueOf[M] * valueOf[N] * valueOf[O])(element)*)
 
-    def diagonalize[M <: Int, N <: Int, O <: Int](tensors: Tensor[A, M, N, O]*)[D <: Int: ValueOf]: Tensor[A, M*D, N*D, O] =
-      require(valueOf[D] > 0)
-      require(valueOf[D] == tensors.size)
+    def stack[M <: Int, N <: Int](matrices: Matrix[A, M, N]*)[O <: Int: ValueOf]: Tensor[A, M, N, O] =
+      val depth = valueOf[O]
 
-      val depth = tensors(0).depth
-      val rows = tensors(0).rows
-      val cols = tensors(0).cols
+      require(depth > 0)
+      require(depth == matrices.size)
 
-      val result = Array.fill(rows * valueOf[D], cols * valueOf[D], depth)(Ring.zero)
+      val rows = matrices(0).rows
+      val cols = matrices(0).cols
+
+      val result = Array.fill(rows, cols, depth)(Ring.zero)
 
       for
-        h <- 0 until depth
         i <- 0 until rows
         j <- 0 until cols
-        k <- 0 until tensors.size
+        k <- 0 until depth
       do
-        result(k*rows+i)(k*cols+j)(h) = tensors(k)(i, j, h)
+        result(i)(j)(k) = matrices(k)(i, j)
 
-      Tensor[A, M*D, N*D, O](result)
+      Tensor[A, M, N, O](result)

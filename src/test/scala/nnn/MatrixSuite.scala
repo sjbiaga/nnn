@@ -88,3 +88,49 @@ class MatrixSuite extends FunSuite:
 
     assertEquals(m.reshape[2], n)
   }
+
+  test("!matrix") {
+    val m = Matrix[Int][2, 4](1, 2, 3, 4,
+                              5, 6, 7, 8)
+
+    val n = Matrix[Int][2, 4](8, 7, 6, 5,
+                              4, 3, 2, 1)
+
+    assertEquals(!m, n)
+  }
+
+  test("matrix ⋆ matrix") {
+    val m = Matrix[Int][7, 7](6, 3, 4, 4, 5, 0, 3,
+                              4, 7, 4, 0, 4, 0, 4,
+                              7, 0, 2, 3, 4, 5, 2,
+                              3, 7, 5, 0, 3, 0, 7,
+                              5, 8, 1, 2, 5, 4, 2,
+                              8, 0, 1, 0, 6, 0, 0,
+                              6, 4, 1, 3, 0, 4, 5)
+
+    val n = Matrix[Int][3, 3](1, 0, 1,
+                              1, 0, 0,
+                              0, 0, 2)
+
+    val p = Matrix[Int][5, 5](18, 20, 21, 14, 16,
+                              25,  7, 16,  3, 26,
+                              14, 14, 21, 16, 13,
+                              15, 15, 21,  2, 15,
+                              16, 16,  7, 14, 23)
+
+    assertEquals(m ⋆ n, p)
+  }
+
+  test("matrix ∗ matrix") {
+    val m = Matrix[Int][3, 4](1, 5, 0, 1,
+                              0, 1, 3, 6,
+                              5, 4, 2, 1)
+
+    val n = Matrix[Int][2, 2](2, 3,
+                              4, 1)
+
+    val p = Matrix[Int][2, 3](23, 14, 25,
+                              27, 29, 35)
+
+    assertEquals(m ∗ n, p)
+  }

@@ -63,14 +63,14 @@ case class Network[
   /**
     * train
     */
-  def apply(data: Data[N], epochs: Long = Long.MaxValue, error: Option[Double] = None): (Long, Real) =
+  def apply(data: Data[N], epochs: Int = Int.MaxValue, error: Option[Double] = None): (Int, Real) =
     require(epochs >= 0 && error.map(_ > 0).getOrElse(true) && (!error.isDefined || data.io.size == 1))
 
-    var count = 0L
+    var count = 0
     var total: Real = Double.MaxValue
 
     for
-      _ <- 1L to epochs
+      _ <- 1 to epochs
       if error.map(total.toDouble > _).getOrElse(true)
     do
       count += 1

@@ -15,78 +15,6 @@ import Tensor.*
 
 class TensorSuite extends FunSuite:
 
-  test("tensor ⋅ ~tensor") {
-    val m = Tensor[Int][2, 3, 1](1, 2, 3,
-                                 4, 5, 6)
-
-    val n = ~m
-
-    val p = Tensor[Int][2, 2, 1](14, 32,
-                                 32, 77)
-
-    assertEquals(m ⋅ n, p)
-  }
-
-  test("tensor ⋆ tensor") {
-    val m = Tensor[Int][3, 4, 1](1, 5, 0, 1,
-                                 0, 1, 3, 6,
-                                 5, 4, 2, 1)
-
-    val n = Tensor[Int][2, 2, 1](2, 3,
-                                 4, 1)
-
-    val p = Tensor[Int][2, 3, 1](18, 17, 21,
-                                 27, 29, 33)
-
-    assertEquals(m ⋆ n, p)
-  }
-
-  test("!tensor") {
-    val m = Tensor[Int][2, 4, 1](1, 2, 3, 4,
-                                 5, 6, 7, 8)
-
-    val n = Tensor[Int][2, 4, 1](8, 7, 6, 5,
-                                 4, 3, 2, 1)
-
-    assertEquals(!m, n)
-  }
-
-  test("tensor ∗ tensor") {
-    val m = Tensor[Int][3, 4, 1](1, 5, 0, 1,
-                                 0, 1, 3, 6,
-                                 5, 4, 2, 1)
-
-    val n = Tensor[Int][2, 2, 1](2, 3,
-                                 4, 1)
-
-    val p = Tensor[Int][2, 3, 1](23, 14, 25,
-                                 27, 29, 35)
-
-    assertEquals(m ∗ n, p)
-  }
-
-  test("tensor ⋆ tensor") {
-    val m = Tensor[Int][7, 7, 1](6, 3, 4, 4, 5, 0, 3,
-                                 4, 7, 4, 0, 4, 0, 4,
-                                 7, 0, 2, 3, 4, 5, 2,
-                                 3, 7, 5, 0, 3, 0, 7,
-                                 5, 8, 1, 2, 5, 4, 2,
-                                 8, 0, 1, 0, 6, 0, 0,
-                                 6, 4, 1, 3, 0, 4, 5)
-
-    val n = Tensor[Int][3, 3, 1](1, 0, 1,
-                                 1, 0, 0,
-                                 0, 0, 2)
-
-    val p = Tensor[Int][5, 5, 1](18, 20, 21, 14, 16,
-                                 25,  7, 16,  3, 26,
-                                 14, 14, 21, 16, 13,
-                                 15, 15, 21,  2, 15,
-                                 16, 16,  7, 14, 23)
-
-    assertEquals(m ⋆ n, p)
-  }
-
   test("tensor ⋆ tensor w/ stride 2") {
     val m = Tensor[Int][7, 7, 1](6, 3, 4, 4, 5, 0, 3,
                                  4, 7, 4, 0, 4, 0, 4,
@@ -107,14 +35,36 @@ class TensorSuite extends FunSuite:
     assertEquals(m[2] ⋆ n, p)
   }
 
-  test("tensor max-pooling") {
-    val m = Tensor[Int][2, 3, 1](23, 14, 25,
-                                 27, 29, 35)
+  test("dilation tensor w/ stride 2") {
+    val m = Tensor[Int][3, 3, 1](18, 21, 16,
+                                 14, 21, 13,
+                                 16,  7, 23)
 
-    val max = Tensor[(Int, Int)][1, 2, 1]((1, 1), (1, 2))
-    val n = Tensor[Int][1, 2, 1](29, 35)
+    val n = Tensor[Int][5, 5, 1](18, 0, 21, 0, 16,
+                                 0,  0, 0 , 0,  0,
+                                 14, 0, 21, 0, 13,
+                                 0,  0, 0 , 0,  0,
+                                 16, 0,  7, 0, 23)
 
-    assertEquals(m.max[2, 2](Int.MinValue), max->n)
+    assertEquals(m[2].dilate, n)
+  }
+
+  test("padding and dilation tensor w/ stride 2") {
+    val m = Tensor[Int][3, 3, 1](18, 21, 16,
+                                 14, 21, 13,
+                                 16,  7, 23)
+
+    val n = Tensor[Int][9, 9, 1](0, 0,  0, 0,  0, 0,  0, 0, 0,
+                                 0, 0,  0, 0,  0, 0,  0, 0, 0,
+                                 0, 0, 18, 0, 21, 0, 16, 0, 0,
+                                 0, 0, 0,  0, 0 , 0,  0, 0, 0,
+                                 0, 0, 14, 0, 21, 0, 13, 0, 0,
+                                 0, 0, 0,  0, 0 , 0,  0, 0, 0,
+                                 0, 0, 16, 0,  7, 0, 23, 0, 0,
+                                 0, 0,  0, 0,  0, 0,  0, 0, 0,
+                                 0, 0,  0, 0,  0, 0,  0, 0, 0)
+
+    assertEquals(m[2].pad_and_dilate[3, 3], n)
   }
 
   test("tensor max-pooling w/ stride 1") {
@@ -195,75 +145,15 @@ class TensorSuite extends FunSuite:
     assertEquals(m.reshape[2].reshape[2], n)
   }
 
-  test("diagonalize matrices") {
-    val m = Tensor[Int][4, 3, 1](6, 3, 4,
-                                 4, 7, 4,
-                                 7, 0, 2,
-                                 3, 7, 5)
+  test("tensor stack matrices") {
+    val m = Matrix[Int][2, 3](1, 3,  5,
+                              7, 9, 11)
 
-    val n = Tensor[Int][4, 3, 1](3, 7, 5,
-                                 5, 8, 1,
-                                 8, 0, 1,
-                                 6, 4, 1)
+    val n = Matrix[Int][2, 3](2,  4,  6,
+                              8, 10, 12)
 
-    val p = Tensor[Int][4, 3, 1](0, 3, 0,
-                                 2, 5, 4,
-                                 8, 0, 1,
-                                 3, 0, 4)
+    val p = Tensor[Int][2, 3, 2](1, 2,  3,  4,   5,  6,
+                                 7, 8,  9, 10,  11, 12)
 
-    val r = Tensor[Int][12, 9, 1](6, 3, 4, 0, 0, 0, 0, 0, 0,
-                                  4, 7, 4, 0, 0, 0, 0, 0, 0,
-                                  7, 0, 2, 0, 0, 0, 0, 0, 0,
-                                  3, 7, 5, 0, 0, 0, 0, 0, 0,
-                                  0, 0, 0, 3, 7, 5, 0, 0, 0,
-                                  0, 0, 0, 5, 8, 1, 0, 0, 0,
-                                  0, 0, 0, 8, 0, 1, 0, 0, 0,
-                                  0, 0, 0, 6, 4, 1, 0, 0, 0,
-                                  0, 0, 0, 0, 0, 0, 0, 3, 0,
-                                  0, 0, 0, 0, 0, 0, 2, 5, 4,
-                                  0, 0, 0, 0, 0, 0, 8, 0, 1,
-                                  0, 0, 0, 0, 0, 0, 3, 0, 4)
-
-    assertEquals(Tensor[Int].diagonalize(m, n, p)[3], r)
-  }
-
-  test("tensor ʹ.⋆ tensor w/ stride 1") {
-    val m = Tensor[Int][4, 4, 1](6, 3, 4, 4,
-                                 4, 7, 4, 0,
-                                 7, 0, 2, 3,
-                                 3, 7, 5, 0)
-
-    val n = Tensor[Int][9, 4, 1](6, 3, 4, 7,
-                                 3, 4, 7, 4,
-                                 4, 4, 4, 0,
-                                 4, 7, 7, 0,
-                                 7, 4, 0, 2,
-                                 4, 0, 2, 3,
-                                 7, 0, 3, 7,
-                                 0, 2, 7, 5,
-                                 2, 3, 5, 0)
-
-    assertEquals(m[1].ʹ.⋆[2, 2], n)
-  }
-
-  test("tensor ʹ.⋆ tensor w/ stride 2") {
-    val m = Tensor[Int][7, 7, 1](6, 3, 4, 4, 5, 0, 3,
-                                 4, 7, 4, 0, 4, 0, 4,
-                                 7, 0, 2, 3, 4, 5, 2,
-                                 3, 7, 5, 0, 3, 0, 7,
-                                 5, 8, 1, 2, 5, 4, 2,
-                                 8, 0, 1, 0, 6, 0, 0,
-                                 6, 4, 1, 3, 0, 4, 5)
-
-    val n = Tensor[Int][9, 9, 1](6, 3, 4, 4, 7, 4, 7, 0, 2,
-                                 4, 4, 5, 4, 0, 4, 2, 3, 4,
-                                 5, 0, 3, 4, 0, 4, 4, 5, 2,
-                                 7, 0, 2, 3, 7, 5, 5, 8, 1,
-                                 2, 3, 4, 5, 0, 3, 1, 2, 5,
-                                 4, 5, 2, 3, 0, 7, 5, 4, 2,
-                                 5, 8, 1, 8, 0, 1, 6, 4, 1,
-                                 1, 2, 5, 1, 0, 6, 1, 3, 0,
-                                 5, 4, 2, 6, 0, 0, 0, 4, 5)
-
-    assertEquals(m[2].ʹ.⋆[3, 3], n)
+    assertEquals(Tensor[Int].stack(m, n)[2], p)
   }

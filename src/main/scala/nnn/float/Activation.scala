@@ -35,7 +35,7 @@ enum Activation(val apply: Float => Float,
 
   case HardTanh extends Activation(1 min _ max -1, x => if -1 < x && x < 1 then x else 1)
 
-  case LeCunnTanh extends Activation(x => 1.7519f*tanh(2f*x/3f), x => 1.7519f*(2f/3f)*(1f - sqr(tanh(2f*x/3f))))
+  case LeCunnTanh extends Activation(x => 1.7159f*tanh(2*x/3), x => { val o = tanh(2*x/3); 1.1439f*(1-sqr(o))  })
 
   case Softplus extends Activation(x => log(1+exp(x)), sigmoid)
 

@@ -10,11 +10,11 @@ object Util:
 
   def sigmoid(x: Float): Float = 1f / (1f + exp(-x))
 
-  inline def exp(x: Float) = spire.math.exp[Float](x)
+  inline def exp(x: Float): Float = spire.math.exp[Float](x)
 
-  inline def log(x: Float) = spire.math.log[Float](x)
+  inline def log(x: Float): Float = spire.math.log[Float](x)
 
-  inline def sqr[A: Ring](x: A) = x.pow(2)
+  inline def sqr[A: Ring](x: A): A = x.pow(2)
 
   inline def kronecker(i: Int)(j: Int): Float =
     if i == j then 1f else 0f

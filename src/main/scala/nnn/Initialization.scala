@@ -8,21 +8,26 @@ import spire.implicits.*
 
 enum Initialization:
 
+  case Constant(value: Double)
+
   case Gaussian(mean: Double = 0, stddev: Double = 1)
 
-  case Xavier(inputs: Int, outputs: Int, normal: Boolean = false)
+  case Glorot(inputs: Int, outputs: Int)
+
+  case Xavier(inputs: Int, outputs: Int)
 
   case Kaiming(inputs: Int)
 
   def apply[A: Ring]()(using c: Conversion[Double, A]): A =
     c {
       this match
+        case Constant(value) => value
         case Gaussian(mean, stddev) =>
           breeze.stats.distributions.Gaussian(mean, stddev).sample()
-        case Xavier(inputs, outputs, true) =>
+        case Glorot(inputs, outputs) =>
           val x = sqrt(6d / (inputs + outputs))
           breeze.stats.distributions.Uniform(-x, x).sample()
-        case Xavier(inputs, outputs, _) =>
+        case Xavier(inputs, outputs) =>
           breeze.stats.distributions.Gaussian(0, sqrt(2d / (inputs + outputs))).sample()
         case Kaiming(inputs) =>
           breeze.stats.distributions.Gaussian(0, sqrt(2d / inputs)).sample()
