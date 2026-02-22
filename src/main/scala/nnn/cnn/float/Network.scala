@@ -156,7 +156,7 @@ case class Network[
   /**
     * train
     */
-  def apply(data: Data[FL[0], FB[0], D[0], N[M]], batch: Int, epochs: Int = Int.MaxValue): Unit =
+  def apply(data: Data[FL[0], FB[0], D[0], N[M]], batch: Int, epochs: Int = Int.MaxValue)(blink: (Int, Int) => Unit): Unit =
     // INITIALIZATION
 
     var NABLA: List[Seq[Tensor[Float, ?, ?, ?]]] = Nil // C
@@ -197,8 +197,9 @@ case class Network[
         NABLA ::= null
 
     for
-      _ <- 1 to epochs
+      count <- 0 until epochs
       done <- 0 until data.io.size by batch
+      _ = blink(count, done)
       weights = this()
     do
       for

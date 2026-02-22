@@ -21,7 +21,7 @@ import NetworkSuite.*
 
 class NetworkSuite extends FunSuite:
 
-  override val munitTimeout = 16.hours
+  override val munitTimeout = 1.day
 
   test("CNN https://en.wikipedia.org/wiki/LeNet#/media/File:LeNet-5_architecture_block_diagram.svg") {
 
@@ -58,42 +58,66 @@ class NetworkSuite extends FunSuite:
 
     given List[Int] = 400/*=5*5*16*/ :: 120 :: 84 :: 10 :: 10 :: Nil
 
+    // val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
+    //   loss = CCE[10](),
+    //   learningRate = 0.01,
+    //   Layer.Convolution[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](glorot[5, 5, 1, 6])[6]*),
+    //   Layer.Pool[2, 2, 2](subsampling[Float, 2, 2, 2, 6](null), LeCunnTanh),
+    //   Layer.Convolution[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](glorot[5, 5, 6, 16])[16]*),
+    //   Layer.Pool[2, 2, 2](subsampling[Float, 2, 2, 2, 16](null), LeCunnTanh),
+    //   Layer.Dense[400, 120](Neuron.xavier[400, 120](LeakyReLU())*),
+    //   Layer.Dense[120, 84](Neuron.xavier[120, 84](LeakyReLU())*),
+    //   Layer.Dense[84, 10](Neuron.xavier[84, 10](LeakyReLU())*),
+    //   Layer.Softmax[10](Xavier(10, 10))
+    // )
+
     val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
       loss = CCE[10](),
       learningRate = 0.01,
-      Layer.Convolution[5, 5, 1, 6](Sigmoid, Kernel[Float, 5, 5, 1](glorot[5, 5, 1, 6])[6]*),
-      Layer.Pool[2, 2, 2](subsampling[Float, 2, 2, 2, 6](null), LeCunnTanh),
-      Layer.Convolution[5, 5, 6, 16](Sigmoid, Kernel[Float, 5, 5, 6](glorot[5, 5, 6, 16])[16]*),
-      Layer.Pool[2, 2, 2](subsampling[Float, 2, 2, 2, 16](null), LeCunnTanh),
-      Layer.Dense[400, 120](Neuron.xavier[400, 120](Sigmoid)*),
-      Layer.Dense[120, 84](Neuron.xavier[120, 84](Sigmoid)*),
-      Layer.Dense[84, 10](Neuron.xavier[84, 10](Sigmoid)*),
-      Layer.Softmax[10](Xavier(10, 10))
+      Layer.Convolution[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](kaiming[5, 5, 1]())[6]*),
+      Layer.Pool[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue), Linear()),
+      Layer.Convolution[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](kaiming[5, 5, 6]())[16]*),
+      Layer.Pool[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue), Linear()),
+      Layer.Dense[400, 120](Neuron.kaiming[400, 120](LeakyReLU())*),
+      Layer.Dense[120, 84](Neuron.kaiming[120, 84](LeakyReLU())*),
+      Layer.Dense[84, 10](Neuron.kaiming[84, 10](LeakyReLU())*),
+      Layer.Softmax[10](Kaiming(10))
     )
 
     val data = Data[32, 32, 1, 10]({
-      val read = 1010 // 60000 // 20000
-      val train = 10 // 60000 // 20000
+      val read = 60000 // 1100 // 20000
+      val train = 60000 // 100 // 20000
 
       val drop = rnd.nextInt(read-train+1)
 
       for
-        case image @ Image(label: Int, _) <- rnd.shuffle(trainMNIST("./data/MNIST", drop+train, true).drop(drop))
+        case image @ Image(label: Int, _) <- rnd.shuffle(trainMNIST("./data/MNIST", drop+train, false).drop(drop))
       yield
         Input(image) -> OneHotOutput(label)
     }*)
 
-    ln(data, 1, 2) // 20)
+    val batch = 100 // 1
+    val epochs = 20 // 2
 
-    val read = 1010 // 10000
-    val test = 10
+    print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
+
+    ln(data, batch, epochs) {
+      case (count, done) if done % 5000 == 0 =>
+        print(s" Passing through $count epochs and $done images...")
+      case _ =>
+    }
+
+    println(" Done.")
+
+    val read = 10000 // 1010
+    val test = 10000
 
     val drop = rnd.nextInt(read-test+1)
 
     var correct = 0
 
     for
-      case image @ Image(label: Int, _) <- rnd.shuffle(testMNIST("./data/MNIST", drop+test, true).drop(drop))
+      case image @ Image(label: Int, _) <- rnd.shuffle(testMNIST("./data/MNIST", drop+test, false).drop(drop))
       Output(answer) = ln(Input(image))
       if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
     do
@@ -102,13 +126,17 @@ class NetworkSuite extends FunSuite:
     val accuracy = ((1f * correct / test) * 100).toInt
 
     println(s"Accuracy: $accuracy%")
-    //assert(accuracy >= 90, s"Accuracy: $accuracy% < 90%")
   }
 
 
 object NetworkSuite:
 
   val rnd = scala.util.Random
+
+  def kaiming[L <: Int: ValueOf, // kernel Length
+              B <: Int: ValueOf, // kernel Breadth
+              I <: Int: ValueOf, // Input channels
+              ](α: Double = 0.01): Initialization = Kaiming(valueOf[L] * valueOf[B] * valueOf[I], α)
 
   def glorot[L <: Int: ValueOf, // kernel Length
              B <: Int: ValueOf, // kernel Breadth

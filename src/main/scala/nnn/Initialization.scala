@@ -16,7 +16,7 @@ enum Initialization:
 
   case Xavier(inputs: Int, outputs: Int)
 
-  case Kaiming(inputs: Int)
+  case Kaiming(inputs: Int, α: Double = 0.01)
 
   def apply[A: Ring]()(using c: Conversion[Double, A]): A =
     c {
@@ -29,6 +29,6 @@ enum Initialization:
           breeze.stats.distributions.Uniform(-x, x).sample()
         case Xavier(inputs, outputs) =>
           breeze.stats.distributions.Gaussian(0, sqrt(2d / (inputs + outputs))).sample()
-        case Kaiming(inputs) =>
-          breeze.stats.distributions.Gaussian(0, sqrt(2d / inputs)).sample()
+        case Kaiming(inputs, α) =>
+          breeze.stats.distributions.Gaussian(0, sqrt(2 / ((1 + α*α) * inputs))).sample()
     }
