@@ -33,7 +33,7 @@ class NetworkSuite extends FunSuite:
 
     val data = Data[2](Input(Vector[Double][2](.05, .10)) -> Output(Vector[Double][2](.01, .99)))
 
-    val (epochs, error) = nn(data, 10000)
+    val (epochs, error) = nn(data, 1, 10000)
 
     assert(epochs == 10000 && error < 1E-5)
 
@@ -58,7 +58,7 @@ class NetworkSuite extends FunSuite:
                         Input(Vector[Double][10](1, 1, 0, 0, 0, 0, 0, 0, 0, 0)) -> Output(Vector[Double][10](0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
     )
 
-    xor(data, 10000)
+    xor(data, 1, 10000)
 
     val answer00 = xor(Input(Vector[Double][10](0, 0, 0, 0, 0, 0, 0, 0, 0, 0))).answer
     val answer01 = xor(Input(Vector[Double][10](0, 1, 0, 0, 0, 0, 0, 0, 0, 0))).answer

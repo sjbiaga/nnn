@@ -73,31 +73,29 @@ case class Network[
   /**
     * train
     */
-  def apply(data: Data[N[0], N[M]], epochs: Int = Int.MaxValue, error: Option[Float] = None): (Int, Float) =
+  def apply(data: Data[N[0], N[M]], batch: Int, epochs: Int = Int.MaxValue, error: Option[Float] = None): (Int, Float) =
     require(epochs >= 0 && error.map(_ > 0).getOrElse(true) && (!error.isDefined || data.io.size == 1))
 
     var count = 0
     var total: Float = Float.MaxValue
 
+    val nabla =
+      for
+        given Int <- cols
+        l = given_Int-1
+        given Long = l.toLong
+      yield
+        Matrix[Float].zero[N[given_Int.type], N[l.type]+1]
+
     for
       _ <- 1 to epochs
       if error.map(total > _).getOrElse(true)
+      _ = count += 1
+      done <- 0 until data.io.size by batch
+      weights = this()
     do
-      count += 1
-
-      var nabla: List[Matrix[Float, ?, ?]] = Nil
-
       for
-        given Int <- cols.reverse
-        l = given_Int-1
-        given Long = l.toLong
-      do
-        nabla ::= Matrix[Float].zero[N[given_Int.type], N[l.type]+1]
-
-      val weights = this()
-
-      for
-        (input, output) <- data.io
+        (input, output) <- data.io.drop(done).take(batch)
       do
         var net: List[Vector[Float, ?]] = Nil
         var out: List[Vector[Float, ?]] = List(input.data.++(1))
@@ -147,7 +145,8 @@ case class Network[
           if l > 0
           then
             val w = weights(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
-            delta = (~w ⋅ δ).-- ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
+            delta = (~w ⋅ δ).--
+                  ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
 
       // GRADIENT DESCENT
 
@@ -166,6 +165,8 @@ case class Network[
           val weights = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]
           layers(l).neurons(n).bias += update0
           layers(l).neurons(n).weights := weights + update1
+
+        nabla(l).reset
 
     count -> total
 

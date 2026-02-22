@@ -143,6 +143,16 @@ case class Vector[
     Matrix[A][M, N/M](toSeq*)
 
   /**
+    * reset to zero
+    */
+  def reset: this.type =
+    for
+      i <- 0 until rows
+    do
+      underlying(i) = Ring[A].zero
+    this
+
+  /**
     * unsafe assignment
     */
   def :=(that: Vector[A, ?]): Unit =

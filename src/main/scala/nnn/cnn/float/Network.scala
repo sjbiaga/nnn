@@ -157,56 +157,53 @@ case class Network[
     * train
     */
   def apply(data: Data[FL[0], FB[0], D[0], N[M]], batch: Int, epochs: Int = Int.MaxValue): Unit =
+    // INITIALIZATION
+
+    var NABLA: List[Seq[Tensor[Float, ?, ?, ?]]] = Nil // C
+    var NBETA: List[Vector[Float, ?]] = Nil // C|P
+    var NBIAS: List[Vector[Float, ?]] = Nil // C|P
+    var nabla: List[Matrix[Float, ?, ?]] = Nil // FC
+
+    for // FULLY CONNECTED
+      given Int <- cols.reverse
+      l = given_Int-1
+      given Long = l.toLong
+    do
+      nabla ::= Matrix[Float].zero[N[given_Int.type], N[l.type]+1]
+
+    for // CONVOLUTION|POOLING
+      given Int <- maps.reverse
+      l = given_Int-1
+      given Boolean = pattern(given_Int)
+    do
+      if given_Boolean
+      then // CONVOLUTION
+        NBETA ::= null
+        NBIAS ::= Vector[Float].zero[D[given_Int.type]]
+        nabla ::= null
+        NABLA ::= (1 to valueOf[D[given_Int.type]]).map { _ =>
+                    given ValueOf[D[l.type]] = ValueOf(volume(l)._6.asInstanceOf[D[l.type]])
+                    Tensor[Float].zero[KL[given_Int.type], KB[given_Int.type], D[l.type]]
+                  }
+      else // POOLING
+        layers(l).pooling match
+          case subsampling(_, _) =>
+            NBETA ::= Vector[Float].zero[D[given_Int.type]]
+            NBIAS ::= Vector[Float].zero[D[given_Int.type]]
+          case _ =>
+            NBETA ::= null
+            NBIAS ::= null
+        nabla ::= null
+        NABLA ::= null
+
     for
       _ <- 1 to epochs
       done <- 0 until data.io.size by batch
+      weights = this()
     do
-
-      // INITIALIZATION
-
-      var NABLA: List[Seq[Tensor[Float, ?, ?, ?]]] = Nil // C
-      var NBETA: List[Vector[Float, ?]] = Nil // C|P
-      var NBIAS: List[Vector[Float, ?]] = Nil // C|P
-      var nabla: List[Matrix[Float, ?, ?]] = Nil // FC
-
-      for // FULLY CONNECTED
-        given Int <- cols.reverse
-        l = given_Int-1
-        given Long = l.toLong
-      do
-        nabla ::= Matrix[Float].zero[N[given_Int.type], N[l.type]+1]
-
-      for // CONVOLUTION|POOLING
-        given Int <- maps.reverse
-        l = given_Int-1
-        given Boolean = pattern(given_Int)
-      do
-        if given_Boolean
-        then // CONVOLUTION
-          NBETA ::= null
-          NBIAS ::= Vector[Float].zero[D[given_Int.type]]
-          nabla ::= null
-          NABLA ::= (1 to valueOf[D[given_Int.type]]).map { _ =>
-                      given ValueOf[D[l.type]] = ValueOf(volume(l)._6.asInstanceOf[D[l.type]])
-                      Tensor[Float].zero[KL[given_Int.type], KB[given_Int.type], D[l.type]]
-                    }
-        else // POOLING
-          layers(l).pooling match
-            case subsampling(_, _) =>
-              NBETA ::= Vector[Float].zero[D[given_Int.type]]
-              NBIAS ::= Vector[Float].zero[D[given_Int.type]]
-            case _ =>
-              NBETA ::= null
-              NBIAS ::= null
-          nabla ::= null
-          NABLA ::= null
-
-      val weights = this()
-
       for
-         (input, output) <- data.io.drop(done).take(batch)
+        (input, output) <- data.io.drop(done).take(batch)
       do
-
         // FORWARD PASS
 
         var NET: List[FeatureMap[Float, ?, ?, ?]] = Nil
@@ -285,14 +282,11 @@ case class Network[
           val w = weights(l-K).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
           if l > K
           then
-            delta = (~w ⋅ δ).-- ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
-          else
             delta = (~w ⋅ δ).--
-            for
-              given Int <- K to K
-            do
-              val δ = delta.asInstanceOf[Vector[Float, N[given_Int.type]]]
-              DELTA = δ.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
+                  ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
+          else
+            given Int = K
+            DELTA = (~w ⋅ δ).--.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
 
         for // CONVOLUTION|POOLING
           given Int <- maps.reverse
@@ -409,6 +403,8 @@ case class Network[
             k <- 0 until layers(l).kernels.size
           do
             layers(l).kernels(k).bias += update(k)
+          NBIAS(l).reset
+          NABLA(l).foreach(_.reset)
         else // POOLING
           layers(l).pooling match
             case ss @ subsampling(β: Vector[Float, D[given_Int.type]], b: Vector[Float, D[given_Int.type]]) =>
@@ -422,6 +418,8 @@ case class Network[
                 val update = ∇.op(-learningRate * _ / batch)
                 ss.bias := b + update
               }
+              NBETA(l).reset
+              NBIAS(l).reset
             case _ =>
 
       for // FULLY CONNECTED
@@ -438,6 +436,8 @@ case class Network[
           val weights = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]
           layers(l).neurons(n).bias += update0
           layers(l).neurons(n).weights := weights + update1
+
+        nabla(l).reset
 
   /**
     * predict

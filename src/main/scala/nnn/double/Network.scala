@@ -62,29 +62,27 @@ case class Network[
   /**
     * train
     */
-  def apply(data: Data[N], epochs: Int = Int.MaxValue, error: Option[Double] = None): (Int, Double) =
+  def apply(data: Data[N], batch: Int, epochs: Int = Int.MaxValue, error: Option[Double] = None): (Int, Double) =
     require(epochs >= 0 && error.map(_ > 0).getOrElse(true) && (!error.isDefined || data.io.size == 1))
 
     var count = 0
     var total: Double = Double.MaxValue
 
+    val nabla =
+      for
+        _ <- cols
+      yield
+        Matrix[Double].zero[N, N+1]
+
     for
       _ <- 1 to epochs
       if error.map(total > _).getOrElse(true)
+      _ = count += 1
+      done <- 0 until data.io.size by batch
+      weights = this()
     do
-      count += 1
-
-      var nabla: List[Matrix[Double, N, N+1]] = Nil
-
       for
-        _ <- cols
-      do
-        nabla ::= Matrix[Double].zero[N, N+1]
-
-      val weights = this()
-
-      for
-        (input, output) <- data.io
+        (input, output) <- data.io.drop(done).take(batch)
       do
         var net = List[Vector[Double, N]]()
         var out = List(input.data.++(1))
@@ -138,6 +136,8 @@ case class Network[
         do
           layers(l).neurons(n).bias += update0
           layers(l).neurons(n).weights += update1
+
+        nabla(l).reset
 
     count -> total
 

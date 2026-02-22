@@ -142,6 +142,18 @@ case class Tensor[
     Tensor[B, M, N, O](result)
 
   /**
+    * reset to zero
+    */
+  def reset: this.type =
+    for
+      i <- 0 until rows
+      j <- 0 until cols
+      k <- 0 until depth
+    do
+      underlying(i)(j)(k) = Ring[A].zero
+    this
+
+  /**
     * w/ stride
     */
   def apply[S <: Int: ValueOf] = PartiallyAppliedStrideOps[S]

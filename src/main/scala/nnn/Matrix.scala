@@ -179,6 +179,17 @@ case class Matrix[
     Tensor[A][M, N/P, P](toSeq.flatten*)
 
   /**
+    * reset to zero
+    */
+  def reset: this.type =
+    for
+      i <- 0 until rows
+      j <- 0 until cols
+    do
+      underlying(i)(j) = Ring[A].zero
+    this
+
+  /**
     * cross-correlation
     */
   def ⋆[P <: Int, Q <: Int](that: Matrix[A, P, Q]): Matrix[A, M-P+1, N-Q+1] =

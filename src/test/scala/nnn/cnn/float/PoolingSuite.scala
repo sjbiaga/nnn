@@ -2,8 +2,6 @@ package nnn
 package cnn
 package float
 
-import scala.compiletime.ops.int.*
-
 import spire.implicits.*
 
 import munit.FunSuite
