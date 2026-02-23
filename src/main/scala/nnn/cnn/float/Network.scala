@@ -31,7 +31,7 @@ case class Network[
   layers: Layer*
 )(using
   pattern: List[Boolean],
-  volume: List[(Int, Int, Int, Int, Int, Int)],
+  volume: List[(Int, Int, Int, Int, Int, Int, Int)],
   shape: List[Int]):
 
   protected implicit def _valueOfFL[C <: Int](using k: Int): ValueOf[FL[C]] = ValueOf(volume(k)._1.asInstanceOf[FL[C]])
@@ -39,7 +39,7 @@ case class Network[
   protected implicit def _valueOfKL[C <: Int](using k: Int): ValueOf[KL[C]] = ValueOf(volume(k)._3.asInstanceOf[KL[C]])
   protected implicit def _valueOfKB[C <: Int](using k: Int): ValueOf[KB[C]] = ValueOf(volume(k)._4.asInstanceOf[KB[C]])
   protected implicit def _valueOfKS[C <: Int](using k: Int): ValueOf[KS[C]] = ValueOf(volume(k)._5.asInstanceOf[KS[C]])
-  protected implicit def _valueOfD[C <: Int](using k: Int): ValueOf[D[C]] = ValueOf(volume(k)._6.asInstanceOf[D[C]])
+  protected implicit def _valueOfD[C <: Int](using k: Int): ValueOf[D[C]] = ValueOf(volume(k)._7.asInstanceOf[D[C]])
   protected implicit def _valueOfPL[C <: Int](using k: Int): ValueOf[PL[C]] = ValueOf(volume(k)._3.asInstanceOf[PL[C]])
   protected implicit def _valueOfPB[C <: Int](using k: Int): ValueOf[PB[C]] = ValueOf(volume(k)._4.asInstanceOf[PB[C]])
   protected implicit def _valueOfPS[C <: Int](using k: Int): ValueOf[PS[C]] = ValueOf(volume(k)._5.asInstanceOf[PS[C]])
@@ -76,11 +76,12 @@ case class Network[
         val P = valueOf[KL[given_Int.type]]
         val Q = valueOf[KB[given_Int.type]]
         val S = valueOf[KS[given_Int.type]]
+        val Z = volume(given_Int)._6
         val MN = {
           given Int = l
-          val M = valueOf[FL[l.type]]
-          val N = valueOf[FB[l.type]]
-          ((M-P)/S+1, (N-Q)/S+1)
+          val M = valueOf[FL[given_Int.type]]
+          val N = valueOf[FB[given_Int.type]]
+          ((M+2*Z-P)/S+1, (N+2*Z-Q)/S+1)
         }
         require(MN._1 == valueOf[FL[given_Int.type]] && MN._2 == valueOf[FB[given_Int.type]],
                 s"mismatch in the convolutional layer ${given_Int} with kernel size ${P}x${Q} stride ${S}")
@@ -92,22 +93,22 @@ case class Network[
         val S = valueOf[PS[given_Int.type]]
         val MND = {
           given Int = l
-          val M = valueOf[FL[l.type]]
-          val N = valueOf[FB[l.type]]
-          ((M-P)/S+1, (N-Q)/S+1, valueOf[D[l.type]])
+          val M = valueOf[FL[given_Int.type]]
+          val N = valueOf[FB[given_Int.type]]
+          ((M-P)/S+1, (N-Q)/S+1, valueOf[D[given_Int.type]])
         }
         require(MND._1 == valueOf[FL[given_Int.type]] && MND._2 == valueOf[FB[given_Int.type]],
                 s"mismatch in the pooling layer ${given_Int} with pool size ${P}x${Q} stride ${S}")
-        require(MND._3 == valueOf[D[l.type]],
+        require(MND._3 == valueOf[D[given_Int.type]],
                 s"depth mismatch in the pooling layer ${given_Int} with pool size ${P}x${Q} stride ${S}")
-        require(P == Q && Q == S,
-                s"overlapping in the pooling layer ${given_Int} with pool size ${P}x${Q} stride ${S}")
       }
 
   {
     given Int = K
     require(shape(0) == valueOf[FL[K]] * valueOf[FB[K]] * valueOf[D[K]],
             s"layer ${given_Int} flattens to ${valueOf[FL[K]] * valueOf[FB[K]] * valueOf[D[K]]} and not to ${shape(0)}")
+    require(volume(K)._6 == 0,
+            s"padding on last ${if pattern(given_Int) then "convolutional" else "pooling"} layer ${given_Int} must be zero")
   }
 
   extension [L <: Int, B <: Int, D <: Int: ValueOf](self: FeatureMap[Float, L, B, D])
@@ -182,7 +183,7 @@ case class Network[
         NBIAS ::= Vector[Float].zero[D[given_Int.type]]
         nabla ::= null
         NABLA ::= (1 to valueOf[D[given_Int.type]]).map { _ =>
-                    given ValueOf[D[l.type]] = ValueOf(volume(l)._6.asInstanceOf[D[l.type]])
+                    given ValueOf[D[l.type]] = ValueOf(volume(l)._7.asInstanceOf[D[l.type]])
                     Tensor[Float].zero[KL[given_Int.type], KB[given_Int.type], D[l.type]]
                   }
       else // POOLING
@@ -195,6 +196,8 @@ case class Network[
             NBIAS ::= null
         nabla ::= null
         NABLA ::= null
+
+    // TRAINING
 
     for
       count <- 0 until epochs
@@ -214,6 +217,7 @@ case class Network[
           given Int <- maps
           l = given_Int-1
           given Boolean = pattern(given_Int)
+          padding = volume(given_Int)._6
         do
           val featureMapIn = OUT.head.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
           val featureMapOut = {
@@ -224,7 +228,7 @@ case class Network[
             else // POOLING
               val pooling = layers(l).pooling[PL[given_Int.type], PB[given_Int.type], PS[given_Int.type]]
               pooling(featureMapIn)
-          }.asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
+          }.pad(padding).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
           NET ::= featureMapOut
           OUT ::= featureMapOut --> layers(l).activation
 
@@ -293,6 +297,7 @@ case class Network[
           given Int <- maps.reverse
           l = given_Int-1
           given Boolean = pattern(given_Int)
+          padding = volume(l)._6
         do
           val h = OUT(l).asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
           val a = NET(l).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
@@ -349,7 +354,13 @@ case class Network[
                       yield
                         δ(k).∗[KL[given_Int.type], KB[given_Int.type]](kernels(k)(d))
                     }.reduce(_ + _)
-                  DELTA = { given Int = l; Tensor[Float].stack(ms*)[D[given_Int.type]] }
+                  if padding == 0
+                  then
+                    DELTA = { given Int = l; Tensor[Float].stack(ms*)[D[given_Int.type]] }
+                  else
+                    type P = padding.type
+                    given ValueOf[P] = ValueOf(padding)
+                    DELTA = { given Int = l; Tensor[Float].stack(ms*)[D[given_Int.type]] }.crop[P, P]
           else // POOLING
             type P = (FL[l.type] - PL[given_Int.type]) / PS[given_Int.type] + 1
             type Q = (FB[l.type] - PB[given_Int.type]) / PS[given_Int.type] + 1
@@ -380,7 +391,13 @@ case class Network[
               case _ =>
             if l > 0
             then
-              DELTA = pooling(h, pa, pδ)
+              if padding == 0
+              then
+                DELTA = pooling(h, pa, pδ)
+              else
+                type P = padding.type
+                given ValueOf[P] = ValueOf(padding)
+                DELTA = pooling(h, pa, pδ).crop[P, P]
 
       // GRADIENT DESCENT
 
@@ -450,6 +467,7 @@ case class Network[
       given Int <- maps
       l = given_Int-1
       given Boolean = pattern(given_Int)
+      padding = volume(given_Int)._6
     do
       val featureMapIn = OUT.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
       val featureMapOut = {
@@ -460,7 +478,7 @@ case class Network[
         else // POOLING
           val pooling = layers(l).pooling[PL[given_Int.type], PB[given_Int.type], PS[given_Int.type]]
           pooling(featureMapIn)
-      }.asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
+      }.pad(padding).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
       OUT = featureMapOut --> layers(l).activation
 
     val flattened = {
@@ -510,6 +528,13 @@ object Network:
   object Neuron:
 
     import Initialization.*
+
+    case class bias(bias: Float = 0):
+
+      def apply[I <: Int: ValueOf,
+                O <: Int: ValueOf](initialization: Initialization,
+                                   activation: nnn.float.Activation): Seq[Neuron[I]] =
+        (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), bias, activation))
 
     def apply[I <: Int: ValueOf,
               O <: Int: ValueOf](initialization: Initialization,

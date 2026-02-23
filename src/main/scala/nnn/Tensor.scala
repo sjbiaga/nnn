@@ -154,6 +154,36 @@ case class Tensor[
     this
 
   /**
+    * padding
+    */
+  def pad[P <: Int: ValueOf, Q <: Int: ValueOf]: Tensor[A, M+2*P, N+2*Q, O] =
+    val P = valueOf[P]
+    val Q = valueOf[Q]
+    val result = Array.fill(rows+2*P, cols+2*Q, depth)(Ring[A].zero)
+    for
+      h <- 0 until depth
+      i <- 0 until rows
+      j <- 0 until cols
+    do
+      result(P+i)(Q+j)(h) = underlying(i)(j)(h)
+    Tensor[A, M+2*P, N+2*Q, O](result)
+
+  /**
+    * cropping
+    */
+  def crop[P <: Int: ValueOf, Q <: Int: ValueOf]: Tensor[A, M-2*P, N-2*Q, O] =
+    val P = valueOf[P]
+    val Q = valueOf[Q]
+    val result = Array.fill(rows-2*P, cols-2*Q, depth)(Ring[A].zero)
+    for
+      h <- 0 until depth
+      i <- 0 until rows-2*P
+      j <- 0 until cols-2*Q
+    do
+      result(i)(j)(h) = underlying(P+i)(Q+j)(h)
+    Tensor[A, M-2*P, N-2*Q, O](result)
+
+  /**
     * w/ stride
     */
   def apply[S <: Int: ValueOf] = PartiallyAppliedStrideOps[S]

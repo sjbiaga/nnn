@@ -73,7 +73,6 @@ enum Pooling[
     a: FeatureMap[A, (M-P)/S+1, (N-Q)/S+1, O],
     δ: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]
   ): Tensor[A, M, N, O] =
-    require(rows == cols && cols == stride)
     val result = Array.fill(h.length, h.breadth, h.depth)(Ring[A].zero)
     for
       d <- 0 until h.depth
@@ -88,11 +87,11 @@ enum Pooling[
             k <- 0 until rows
             l <- 0 until cols
           do
-            result(i+k)(j+l)(d) = δ(iʹ, jʹ, d)
+            result(i+k)(j+l)(d) += δ(iʹ, jʹ, d)
         case max(_) =>
           val max = a.volume.asInstanceOf[MaxPoolingVolume[A, (M-P)/S+1, (N-Q)/S+1, O, P, Q, S]].max
           val (k, l) = max(iʹ, jʹ, d)
-          result(k)(l)(d) = δ(iʹ, jʹ, d)
+          result(k)(l)(d) += δ(iʹ, jʹ, d)
     Image[A, M, N, O](null, Tensor[A, M, N, O](result))
 
 

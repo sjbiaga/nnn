@@ -145,6 +145,30 @@ class TensorSuite extends FunSuite:
     assertEquals(m.reshape[2].reshape[2], n)
   }
 
+  test("tensor padding") {
+    val m = Tensor[Int][2, 3, 2](1, 2,  3,  4,   5,  6,
+                                 7, 8,  9, 10,  11, 12)
+
+    val n = Tensor[Int][4, 5, 2](0, 0,  0, 0,  0,  0,   0,  0,  0, 0,
+                                 0, 0,  1, 2,  3,  4,   5,  6,  0, 0,
+                                 0, 0,  7, 8,  9, 10,  11, 12,  0, 0,
+                                 0, 0,  0, 0,  0,  0,   0,  0,  0, 0)
+
+    assertEquals(m.pad[1, 1], n)
+  }
+
+  test("tensor cropping") {
+    val m = Tensor[Int][4, 5, 2](0, 0,  0, 0,  0,  0,   0,  0,  0, 0,
+                                 0, 0,  1, 2,  3,  4,   5,  6,  0, 0,
+                                 0, 0,  7, 8,  9, 10,  11, 12,  0, 0,
+                                 0, 0,  0, 0,  0,  0,   0,  0,  0, 0)
+
+    val n = Tensor[Int][2, 3, 2](1, 2,  3,  4,   5,  6,
+                                 7, 8,  9, 10,  11, 12)
+
+    assertEquals(m.crop[1, 1], n)
+  }
+
   test("tensor stack matrices") {
     val m = Matrix[Int][2, 3](1, 3,  5,
                               7, 9, 11)

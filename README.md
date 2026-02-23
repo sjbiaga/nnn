@@ -102,6 +102,26 @@ It takes about 16 hours (on an Intel i5 CPU at 2.90GHz) to train the entire shuf
 60000 images, in 100 batches and 20 epochs, then testing the entire shuffled 10000
 test images with an accuracy of 98%.
 
+An experimental reduced version of `AlexNet` with 10 classes and 512 neurons in
+the dense layers (instead of 1000 and 4096), and without the original optimizations,
+is also included for purpose of demonstration, but disabled because of being slow.
+The `CIFAR-10` database must be downloaded:
+
+    https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
+
+and unpacked in the root-relative "`./data`" folder:
+
+	batches.meta.txt
+	data_batch_1.bin
+	data_batch_2.bin
+	data_batch_3.bin
+	data_batch_4.bin
+	data_batch_5.bin
+	readme.html
+	test_batch.bin
+
+The `RGB` images are `32x32` and scaled to `227x227`.
+
 Testing
 -------
 

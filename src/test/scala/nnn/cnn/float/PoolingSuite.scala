@@ -61,3 +61,28 @@ class PoolingSuite extends FunSuite:
 
     assertEquals(p(h, a, δ), r)
   }
+
+  test("overlapping max gradient distribution w/ stride 3") {
+    val h = Image[Float, 6, 6, 1](null, Tensor[Float][6, 6, 1](6, 3, 4, 4, 5, 0,
+                                                               4, 0, 7, 0, 4, 0,
+                                                               7, 0, 2, 3, 4, 5,
+                                                               3, 7, 5, 0, 3, 0,
+                                                               5, 0, 1, 2, 5, 4,
+                                                               6, 4, 1, 8, 0, 4))
+
+    val p = max[Float, 4, 4, 2](Float.MinValue)
+
+    val a = p.apply(h)
+
+    val δ = Tensor[Float][2, 2, 1](1, 2,
+                                   4, 5)
+
+    val r = Tensor[Float][6, 6, 1](0, 0, 0, 0, 0, 0,
+                                   0, 0, 3, 0, 0, 0,
+                                   0, 0, 0, 0, 0, 0,
+                                   0, 0, 0, 0, 0, 0,
+                                   0, 0, 0, 0, 0, 0,
+                                   0, 0, 0, 9, 0, 0)
+
+    assertEquals(p(h, a, δ), r)
+  }

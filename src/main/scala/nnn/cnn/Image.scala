@@ -16,7 +16,7 @@ case class Image[
   L <: Int,
   B <: Int,
   D <: Int
-](label: Any, volume: Volume[A, L, B, D]) { self =>
+](var label: Any, volume: Volume[A, L, B, D]) { self =>
 
   val depth = volume.data.depth
   val length = volume.data.rows
@@ -38,6 +38,18 @@ case class Image[
       */
     def ⋆[P <: Int, Q <: Int](kernels: Kernel[A, P, Q, D]*)[D <: Int: ValueOf]: Image[A, (L-P)/S+1, (B-Q)/S+1, D] =
       Image[A, (L-P)/S+1, (B-Q)/S+1, D](null, Tensor[A][(L-P)/S+1, (B-Q)/S+1, D](kernels.map(that => (self.volume.data[S] ⋆ that.volume.data).reduce(_ + _).op(_ + that.bias))*))
+
+  /**
+    * unsafe padding
+    */
+  def pad(padding: Int): Image[A, ?, ?, D] =
+    if padding == 0
+    then
+      this
+    else
+      type P = padding.type
+      given ValueOf[P] = ValueOf(padding)
+      Image[A, L+2*P, B+2*P, D](label, volume.data.pad[P, P])
 
   /**
     * flatten
@@ -131,6 +143,15 @@ object Image:
       extends Image[A, L, B, D](null, volume)
 
   object Kernel:
+
+    case class bias[A: Ring: ClassTag](bias: A):
+
+      def apply[
+        L <: Int: ValueOf,
+        B <: Int: ValueOf,
+        D <: Int: ValueOf
+      ](initialization: Initialization)[O <: Int: ValueOf](using Conversion[Double, A]): Seq[Kernel[A, L, B, D]] =
+        (1 to valueOf[O]).map(_ => new Kernel[A, L, B, D](bias, Tensor[A][L, B, D](initialization)))
 
     def apply[
       A: Ring: ClassTag,

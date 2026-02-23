@@ -16,14 +16,14 @@ import nnn.float.Util.given
 import Image.*
 import Pooling.*
 import Network.*
-import NetworkSuite.*
+import LeNetSuite.*
 
 
-class NetworkSuite extends FunSuite:
+class LeNetSuite extends FunSuite:
 
   override val munitTimeout = 16.hours
 
-  test("CNN https://en.wikipedia.org/wiki/LeNet#/media/File:LeNet-5_architecture_block_diagram.svg") {
+  test("CNN:MNIST https://en.wikipedia.org/wiki/LeNet#/media/File:LeNet-5_architecture_block_diagram.svg") {
 
     type FL[C <: Int] = C match { case 0 => 32 case 1 => 28 case 2 => 14 case 3 => 10 case 4 => 5 } // Feature Length
 
@@ -47,14 +47,14 @@ class NetworkSuite extends FunSuite:
 
     given List[Boolean] = false :: true :: false :: true :: false :: Nil
 
-    // true     FL   FB   KL   KB   KS   D
-    // false    FL   FB   PL   PB   PS   D
-    given List[(Int, Int, Int, Int, Int, Int)] = (32, 32, 0, 0, 0,  1) // image
-                                              :: (28, 28, 5, 5, 1,  6) // convolutional
-                                              :: (14, 14, 2, 2, 2,  6) // subsampling
-                                              :: (10, 10, 5, 5, 1, 16) // convolutional
-                                              :: ( 5,  5, 2, 2, 2, 16) // subsampling
-                                              :: Nil
+    // true     FL   FB   KL   KB   KS   pad  D
+    // false    FL   FB   PL   PB   PS   pad  D
+    given List[(Int, Int, Int, Int, Int, Int, Int)] = (32, 32, 0, 0, 0, 0,  1) // image
+                                                   :: (28, 28, 5, 5, 1, 0,  6) // convolutional
+                                                   :: (14, 14, 2, 2, 2, 0,  6) // subsampling
+                                                   :: (10, 10, 5, 5, 1, 0, 16) // convolutional
+                                                   :: ( 5,  5, 2, 2, 2, 0, 16) // subsampling
+                                                   :: Nil
 
     given List[Int] = 400/*=5*5*16*/ :: 120 :: 84 :: 10 :: 10 :: Nil
 
@@ -85,8 +85,8 @@ class NetworkSuite extends FunSuite:
     )
 
     val data = Data[32, 32, 1, 10]({
-      val read = 60000 // 1100 // 20000
-      val train = 60000 // 100 // 20000
+      val read = 1010 // 60000 // 20000
+      val train = 10 // 60000 // 20000
 
       val drop = rnd.nextInt(read-train+1)
 
@@ -96,8 +96,8 @@ class NetworkSuite extends FunSuite:
         Input(image) -> OneHotOutput(label)
     }*)
 
-    val batch = 100 // 1
-    val epochs = 20 // 2
+    val batch = 1 // 100
+    val epochs = 2 // 20
 
     print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
@@ -109,10 +109,12 @@ class NetworkSuite extends FunSuite:
 
     println(" Done.")
 
-    val read = 10000 // 1010
-    val test = 10000
+    val read = 1010 // 10000
+    val test = 10 // 10000
 
     val drop = rnd.nextInt(read-test+1)
+
+    print(s"Testing $test images...")
 
     var correct = 0
 
@@ -123,13 +125,15 @@ class NetworkSuite extends FunSuite:
     do
       correct += 1
 
+    println(" Done.")
+
     val accuracy = ((1f * correct / test) * 100).toInt
 
     assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
   }
 
 
-object NetworkSuite:
+object LeNetSuite:
 
   val rnd = scala.util.Random
 
