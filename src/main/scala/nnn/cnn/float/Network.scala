@@ -518,13 +518,11 @@ object Network:
 
     def xavier[I <: Int: ValueOf,
                O <: Int: ValueOf](activation: nnn.float.Activation): Seq[Neuron[I]] =
-      val initialization = Xavier(valueOf[I], valueOf[O])
-      (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), initialization(), activation))
+      this[I, O](Xavier(valueOf[I], valueOf[O]), activation)
 
     def kaiming[I <: Int: ValueOf,
                 O <: Int: ValueOf](activation: nnn.float.Activation = nnn.float.Activation.ReLU): Seq[Neuron[I]] =
-      val initialization = Kaiming(valueOf[I])
-      (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), initialization(), activation))
+      this[I, O](Kaiming(valueOf[I]), activation)
 
   sealed trait Layer
 

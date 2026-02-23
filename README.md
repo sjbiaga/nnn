@@ -13,7 +13,11 @@ The type `Vector[A, N]` specifies that the vectors contains elements of type `A`
 and has `N` number of rows. `A` must have a `Ring` typeclass instance, as defined
 in [spire](https://spire-math.org).
 
-Each operation performed with matrices and vectors must type check, meaning one
+The type `Tensor[A, M, N, O]` specifies that the `3D` tensor contains elements of
+type `A`, has `M` number of rows, `N` number of columns and `O` as depth. `A` must
+have a `Ring` typeclass instance, as defined in [spire](https://spire-math.org).
+
+Each operation performed with tensors, matrices, or vectors must type check, meaning one
 can multiply a `Matrix[A, M, N]` and a `Matrix[A, N, P]`, yielding a `Matrix[A, M, P]`,
 but one cannot multiply the former with a `Matrix[B, N, P]` or a `Matrix[A, P, Q]`,
 because `A` differs from `B`, respectively, `N` differs from `P`.
@@ -39,7 +43,7 @@ or [this `java-toy-neural-network` project](https://github.com/lexesj/java-toy-n
 Neural Network
 --------------
 
-The package `float` builds around a generalized neural network, where
+The package `nnn.float` builds around a generalized neural network, where
 the assumption of a constant number of neurons per each layer is relaxed, and
 thus the number of neurons may differ between layers.
 
@@ -72,6 +76,32 @@ shape is passed as implicit parameter. Then, `1` occuring in the argument
 
 Note that the output layer is also a hidden layer.
 
+Convolutional Neural Network
+----------------------------
+
+The package `nnn.cnn.float` builds around a generalized _convolutional_ neural network.
+A modified version of `LeNet` with `Kaiming` initialization, `LeakyReLU` activation,
+and `Max Pooling` (instead of `Xavier/Gorot` initialization, `Sigmoid` activation, and
+`Subsampling`) tests the implementation of `CNN`s. The `MNIST` databases are used and
+the four `.gz` files must be placed under the root-relative "`./data/MNIST`" folder:
+
+    train-images-idx3-ubyte.gz
+    train-labels-idx1-ubyte.gz
+    t10k-images-idx3-ubyte.gz
+    t10k-labels-idx1-ubyte.gz
+
+According to [this](https://stackoverflow.com/questions/66577151/http-error-when-trying-to-download-mnist-data),
+the following URLs can be used for download:
+
+    https://ossci-datasets.s3.amazonaws.com/mnist/train-images-idx3-ubyte.gz
+    https://ossci-datasets.s3.amazonaws.com/mnist/train-labels-idx1-ubyte.gz
+    https://ossci-datasets.s3.amazonaws.com/mnist/t10k-images-idx3-ubyte.gz
+    https://ossci-datasets.s3.amazonaws.com/mnist/t10k-labels-idx1-ubyte.gz
+
+It takes about 16 hours (on an Intel i5 CPU at 2.90GHz) to train the entire shuffled
+60000 images, in 100 batches and 20 epochs, then testing the entire shuffled 10000
+test images with an accuracy of 98%.
+
 Testing
 -------
 
@@ -79,7 +109,7 @@ Use, for instance, the following `sbt` command:
 
     sbt:N Neural Networks> testOnly *double*Network*
 
-This will run all tests with the word "`Network`" in package "`double`" (where all
+This will run all tests with the word "`Network`" in package "`nnn.double`" (where all
 values, functions, or networks are based on the `Double` type): there is only one
 such suite, `nnn.double.NetworkSuite`.
 

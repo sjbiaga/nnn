@@ -21,7 +21,7 @@ import NetworkSuite.*
 
 class NetworkSuite extends FunSuite:
 
-  override val munitTimeout = 1.day
+  override val munitTimeout = 16.hours
 
   test("CNN https://en.wikipedia.org/wiki/LeNet#/media/File:LeNet-5_architecture_block_diagram.svg") {
 
@@ -102,7 +102,7 @@ class NetworkSuite extends FunSuite:
     print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
     ln(data, batch, epochs) {
-      case (count, done) if done % 5000 == 0 =>
+      case (count, done) if count % 5 == 0 && done % 5000 == 0 =>
         print(s" Passing through $count epochs and $done images...")
       case _ =>
     }
@@ -125,7 +125,7 @@ class NetworkSuite extends FunSuite:
 
     val accuracy = ((1f * correct / test) * 100).toInt
 
-    println(s"Accuracy: $accuracy%")
+    assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
   }
 
 
