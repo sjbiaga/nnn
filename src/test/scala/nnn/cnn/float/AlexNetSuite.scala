@@ -80,7 +80,7 @@ class AlexNetSuite extends FunSuite:
     )
 
     val data = Data[227, 227, 3, 10]({
-      val read = 1001 // 10000
+      val read = 1 // 10000
       val train = 0 // 10000
 
       val drop = rnd.nextInt(read-train+1)
@@ -105,7 +105,7 @@ class AlexNetSuite extends FunSuite:
 
     println(" Done.")
 
-    val read = 1001 // 10000
+    val read = 1 // 10000
     val test = 0 // 10000
 
     val drop = rnd.nextInt(read-test+1)
@@ -191,11 +191,11 @@ object AlexNetSuite:
         // https://stackoverflow.com/questions/20016123/scala-image-resize-and-crop
 
         val resized = new BufferedImage(227, 227, BufferedImage.TYPE_INT_RGB)
-        resized.getGraphics.drawImage(image.getScaledInstance(227, 227, SCALE_DEFAULT), 0, 0, null)
+        resized.getGraphics.drawImage(image.getScaledInstance(224, 224, SCALE_DEFAULT), 0, 0, null)
 
         // https://github.com/eliasyilma/CNN/blob/master/src/cnn/CNN.java#L63
 
-        val pixels = resized.getRGB(0, 0, 227, 227, null, 0, 227)
+        val pixels = resized.getRGB(0, 0, 224, 224, null, 0, 224)
 
         val data = Array.fill(227, 227, 3)(if zero then 0f else -1f)
 
@@ -210,11 +210,11 @@ object AlexNetSuite:
           green = (pixel >> 8) & 0xFF
           blue = pixel & 0xFF
         do
-          data(row)(col)(0) = if zero then red / 255.0f else 2 * red / 255.0f - 1
-          data(row)(col)(1) = if zero then green / 255.0f else 2 * green / 255.0f - 1
-          data(row)(col)(2) = if zero then blue / 255.0f else 2 * blue / 255.0f - 1
+          data(row+1)(col+1)(0) = if zero then red / 255.0f else 2 * red / 255.0f - 1
+          data(row+1)(col+1)(1) = if zero then green / 255.0f else 2 * green / 255.0f - 1
+          data(row+1)(col+1)(2) = if zero then blue / 255.0f else 2 * blue / 255.0f - 1
           col += 1
-          if col == 227
+          if col == 224
           then
             col = 0
             row += 1
