@@ -32,7 +32,8 @@ case class Network[
 )(using
   pattern: List[Boolean],
   volume: List[(Int, Int, Int, Int, Int, Int, Int)],
-  shape: List[Int]):
+  shape: List[Int]
+):
 
   protected implicit def _valueOfFL[C <: Int](using k: Int): ValueOf[FL[C]] = ValueOf(volume(k)._1.asInstanceOf[FL[C]])
   protected implicit def _valueOfFB[C <: Int](using k: Int): ValueOf[FB[C]] = ValueOf(volume(k)._2.asInstanceOf[FB[C]])

@@ -25,6 +25,27 @@ class AlexNetSuite extends FunSuite:
 
   test("CNN:CIFAR-10 https://en.wikipedia.org/wiki/AlexNet#/media/File:AlexNet_block_diagram.svg") {
 
+    // TYPE CHECKING
+
+    def C[C <: Int, O <: Int: ValueOf](layer: Layer.Convolutional[?, ?, ?, O])
+                                      (using kl: ValueOf[KL[C]], kb: ValueOf[KB[C]], d: ValueOf[D[C-1]]): layer.type =
+      require(valueOf[O] == layer.kernels.size)
+      require(layer.kernels.forall { it => it.length == kl.value && it.breadth == kb.value && it.depth == d.value })
+      layer
+
+    def P[C <: Int](layer: Layer.Pooling[?, ?, ?])
+                   (using pl: ValueOf[PL[C]], pb: ValueOf[PB[C]], ps: ValueOf[PS[C]]): layer.type =
+      require(layer.pooling match { case it => it.rows == pl.value && it.cols == pb.value && it.stride == ps.value })
+      layer
+
+    def D[L <: Int](layer: Layer.Dense[?, ?])
+                   (using p: ValueOf[N[L-1]], n: ValueOf[N[L]]): layer.type =
+      require(n.value == layer.neurons.size)
+      require(layer.neurons.forall { it => it.weights.size == p.value })
+      layer
+
+    // SHAPES
+
     type FL[C <: Int] = C match { case 0 => 227 case 1 => 55 case 2 | 3 => 27 case 4 | 5 | 6 | 7 => 13 case 8 => 6 } // Feature Length
 
     type FB[C <: Int] = C match { case 0 => 227 case 1 => 55 case 2 | 3 => 27 case 4 | 5 | 6 | 7 => 13 case 8 => 6 } // Feature Breadth
@@ -62,26 +83,26 @@ class AlexNetSuite extends FunSuite:
 
     given List[Int] = 9216/*=6*6*256*/ :: 512 :: 512 :: 10 :: 10 :: Nil
 
-    print("Initializing AlexNet...")
+    print("Initializing AlexNet CNN...")
 
     val an = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 8, N, 12](
       loss = CCE[10](),
       learningRate = 0.01,
-      Layer.Convolutional[11, 11, 3, 96](ReLU, Kernel[Float, 11, 11, 3](gaussian)[96]*),
-      Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue)),
-      Layer.Convolutional[5, 5, 96, 256](ReLU, Kernel.bias[Float](1)[5, 5, 96](gaussian)[256]*),
-      Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue)),
-      Layer.Convolutional[3, 3, 256, 384](ReLU, Kernel[Float, 3, 3, 256](gaussian)[384]*),
-      Layer.Convolutional[3, 3, 384, 384](ReLU, Kernel.bias[Float](1)[3, 3, 384](gaussian)[384]*),
-      Layer.Convolutional[3, 3, 384, 256](ReLU, Kernel.bias[Float](1)[3, 3, 384](gaussian)[256]*),
-      Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue)),
-      Layer.Dense[9216, 512](Neuron.bias(1)[9216, 512](gaussian, ReLU)*),
-      Layer.Dense[512, 512](Neuron.bias(1)[512, 512](gaussian, ReLU)*),
-      Layer.Dense[512, 10](Neuron.bias(1)[512, 10](gaussian, ReLU)*),
-      Layer.Softmax[10](gaussian)
+      C[1, 96](Layer.Convolutional[11, 11, 3, 96](ReLU, Kernel[Float, 11, 11, 3](gaussian)[96]*)),      // C1
+      P[2](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                // P1
+      C[3, 256](Layer.Convolutional[5, 5, 96, 256](ReLU, Kernel.bias(1f)[5, 5, 96](gaussian)[256]*)),   // C2
+      P[4](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                // P2
+      C[5, 384](Layer.Convolutional[3, 3, 256, 384](ReLU, Kernel[Float, 3, 3, 256](gaussian)[384]*)),   // C3
+      C[6, 384](Layer.Convolutional[3, 3, 384, 384](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[384]*)), // C4
+      C[7, 256](Layer.Convolutional[3, 3, 384, 256](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[256]*)), // C5
+      P[8](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                // P3
+      D[9](Layer.Dense[9216, 512](Neuron.bias(1f)[9216, 512](gaussian, ReLU)*)),
+      D[10](Layer.Dense[512, 512](Neuron.bias(1f)[512, 512](gaussian, ReLU)*)),
+      D[11](Layer.Dense[512, 10](Neuron.bias(1f)[512, 10](gaussian, ReLU)*)),
+      D[12](Layer.Softmax[10](gaussian))
     )
 
-    println(" Done.")
+    println(" done.")
 
     val data = Data[227, 227, 3, 10]({
       val read = 1 // 10000
@@ -107,7 +128,7 @@ class AlexNetSuite extends FunSuite:
       case _ =>
     }
 
-    println(" Done.")
+    println(" done.")
 
     val read = 1 // 10000
     val test = 0 // 10000
@@ -125,7 +146,7 @@ class AlexNetSuite extends FunSuite:
     do
       correct += 1
 
-    println(" Done.")
+    println(" done.")
 
     val accuracy = ((1f * correct / test) * 100).toInt
 
@@ -163,7 +184,15 @@ object AlexNetSuite:
 
     val binFileName = s"$name.bin"
 
-    val binInputStream = FileInputStream(Paths.get(path).resolve(binFileName).toFile)
+    val binInputStream =
+      try
+
+        FileInputStream(Paths.get(path).resolve(binFileName).toFile)
+
+      catch t =>
+
+        println("Cannot open CIFAR-10 data files: please consult README.md for instructions!")
+        throw t
 
     try
 

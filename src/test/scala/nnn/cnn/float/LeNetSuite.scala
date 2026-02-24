@@ -25,6 +25,27 @@ class LeNetSuite extends FunSuite:
 
   test("CNN:MNIST https://en.wikipedia.org/wiki/LeNet#/media/File:LeNet-5_architecture_block_diagram.svg") {
 
+    // TYPE CHECKING
+
+    def C[C <: Int, O <: Int: ValueOf](layer: Layer.Convolutional[?, ?, ?, O])
+                                      (using kl: ValueOf[KL[C]], kb: ValueOf[KB[C]], d: ValueOf[D[C-1]]): layer.type =
+      require(valueOf[O] == layer.kernels.size)
+      require(layer.kernels.forall { it => it.length == kl.value && it.breadth == kb.value && it.depth == d.value })
+      layer
+
+    def P[C <: Int](layer: Layer.Pooling[?, ?, ?])
+                   (using pl: ValueOf[PL[C]], pb: ValueOf[PB[C]], ps: ValueOf[PS[C]]): layer.type =
+      require(layer.pooling match { case it => it.rows == pl.value && it.cols == pb.value && it.stride == ps.value })
+      layer
+
+    def D[L <: Int](layer: Layer.Dense[?, ?])
+                   (using p: ValueOf[N[L-1]], n: ValueOf[N[L]]): layer.type =
+      require(n.value == layer.neurons.size)
+      require(layer.neurons.forall { it => it.weights.size == p.value })
+      layer
+
+    // SHAPES
+
     type FL[C <: Int] = C match { case 0 => 32 case 1 => 28 case 2 => 14 case 3 => 10 case 4 => 5 } // Feature Length
 
     type FB[C <: Int] = C match { case 0 => 32 case 1 => 28 case 2 => 14 case 3 => 10 case 4 => 5 } // Feature Breadth
@@ -58,35 +79,35 @@ class LeNetSuite extends FunSuite:
 
     given List[Int] = 400/*=5*5*16*/ :: 120 :: 84 :: 10 :: 10 :: Nil
 
-    print("Initializing LeNet...")
+    print("Initializing LeNet CNN...")
 
     // val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
     //   loss = CCE[10](),
     //   learningRate = 0.01,
-    //   Layer.Convolutional[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](glorot[5, 5, 1, 6])[6]*),
-    //   Layer.Pooling[2, 2, 2](subsampling[Float, 2, 2, 2, 6](null), LeCunnTanh),
-    //   Layer.Convolutional[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](glorot[5, 5, 6, 16])[16]*),
-    //   Layer.Pooling[2, 2, 2](subsampling[Float, 2, 2, 2, 16](null), LeCunnTanh),
-    //   Layer.Dense[400, 120](Neuron.xavier[400, 120](LeakyReLU())*),
-    //   Layer.Dense[120, 84](Neuron.xavier[120, 84](LeakyReLU())*),
-    //   Layer.Dense[84, 10](Neuron.xavier[84, 10](LeakyReLU())*),
-    //   Layer.Softmax[10](Xavier(10, 10))
+    //   C[1, 6](Layer.Convolutional[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](glorot[5, 5, 1, 6])[6]*)),
+    //   P[2](Layer.Pooling[2, 2, 2](subsampling[Float, 2, 2, 2, 6](null), LeCunnTanh)),
+    //   C[3, 16](Layer.Convolutional[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](glorot[5, 5, 6, 16])[16]*)),
+    //   P[4](Layer.Pooling[2, 2, 2](subsampling[Float, 2, 2, 2, 16](null), LeCunnTanh)),
+    //   D[5](Layer.Dense[400, 120](Neuron.xavier[400, 120](LeakyReLU())*)),
+    //   D[6](Layer.Dense[120, 84](Neuron.xavier[120, 84](LeakyReLU())*)),
+    //   D[7](Layer.Dense[84, 10](Neuron.xavier[84, 10](LeakyReLU())*)),
+    //   D[8](Layer.Softmax[10](Xavier(10, 10)))
     // )
 
     val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
       loss = CCE[10](),
       learningRate = 0.01,
-      Layer.Convolutional[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](kaiming[5, 5, 1]())[6]*),
-      Layer.Pooling[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue)),
-      Layer.Convolutional[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](kaiming[5, 5, 6]())[16]*),
-      Layer.Pooling[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue)),
-      Layer.Dense[400, 120](Neuron.kaiming[400, 120](LeakyReLU())*),
-      Layer.Dense[120, 84](Neuron.kaiming[120, 84](LeakyReLU())*),
-      Layer.Dense[84, 10](Neuron.kaiming[84, 10](LeakyReLU())*),
-      Layer.Softmax[10](Kaiming(10))
+      C[1, 6](Layer.Convolutional[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](kaiming[5, 5, 1]())[6]*)),
+      P[2](Layer.Pooling[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue))),
+      C[3, 16](Layer.Convolutional[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](kaiming[5, 5, 6]())[16]*)),
+      P[4](Layer.Pooling[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue))),
+      D[5](Layer.Dense[400, 120](Neuron.kaiming[400, 120](LeakyReLU())*)),
+      D[6](Layer.Dense[120, 84](Neuron.kaiming[120, 84](LeakyReLU())*)),
+      D[7](Layer.Dense[84, 10](Neuron.kaiming[84, 10](LeakyReLU())*)),
+      D[8](Layer.Softmax[10](Kaiming(10)))
     )
 
-    println(" Done.")
+    println(" done.")
 
     val data = Data[32, 32, 1, 10]({
       val read = 1010 // 60000 // 20000
@@ -111,7 +132,7 @@ class LeNetSuite extends FunSuite:
       case _ =>
     }
 
-    println(" Done.")
+    println(" done.")
 
     val read = 1010 // 10000
     val test = 10 // 10000
@@ -129,7 +150,7 @@ class LeNetSuite extends FunSuite:
     do
       correct += 1
 
-    println(" Done.")
+    println(" done.")
 
     val accuracy = ((1f * correct / test) * 100).toInt
 
@@ -172,17 +193,25 @@ object LeNetSuite:
 
   def MNIST(path: String, name: String, size: Int, zero: Boolean): Seq[Image[Float, 32, 32, 1]] =
 
-    val imagesFileName = s"$name-images-idx3-ubyte.gz"
-    val labelsFileName = s"$name-labels-idx1-ubyte.gz"
+    val (imagesDataInputStream, labelsDataInputStream) =
+      try
 
-    val compressedImagesInputStream = FileInputStream(Paths.get(path).resolve(imagesFileName).toFile)
-    val compressedLabelsInputStream = FileInputStream(Paths.get(path).resolve(labelsFileName).toFile)
+        val imagesFileName = s"$name-images-idx3-ubyte.gz"
+        val labelsFileName = s"$name-labels-idx1-ubyte.gz"
 
-    val decompressedImagesInputStream = GZIPInputStream(compressedImagesInputStream)
-    val decompressedLabelsInputStream = GZIPInputStream(compressedLabelsInputStream)
+        val compressedImagesInputStream = FileInputStream(Paths.get(path).resolve(imagesFileName).toFile)
+        val compressedLabelsInputStream = FileInputStream(Paths.get(path).resolve(labelsFileName).toFile)
 
-    val imagesDataInputStream = DataInputStream(decompressedImagesInputStream)
-    val labelsDataInputStream = DataInputStream(decompressedLabelsInputStream)
+        val decompressedImagesInputStream = GZIPInputStream(compressedImagesInputStream)
+        val decompressedLabelsInputStream = GZIPInputStream(compressedLabelsInputStream)
+
+        DataInputStream(decompressedImagesInputStream) ->
+        DataInputStream(decompressedLabelsInputStream)
+
+      catch t =>
+
+        println("Cannot open MNIST data files: please consult README.md for instructions!")
+        throw t
 
     try
       assert(imagesDataInputStream.readInt == 0x803)
