@@ -27,8 +27,15 @@ class AlexNetSuite extends FunSuite:
 
     // TYPE CHECKING
 
-    def C[C <: Int, O <: Int: ValueOf](layer: Layer.Convolutional[?, ?, ?, O])
-                                      (using kl: ValueOf[KL[C]], kb: ValueOf[KB[C]], d: ValueOf[D[C-1]]): layer.type =
+    def C[C <: Int: ValueOf, O <: Int: ValueOf](layer: Layer.Convolutional[?, ?, ?, O])
+                                               (using flp: ValueOf[FL[C-1]], fbp: ValueOf[FB[C-1]],
+                                                      fl: ValueOf[FL[C]], fb: ValueOf[FL[C]],
+                                                      kl: ValueOf[KL[C]], kb: ValueOf[KB[C]], ks: ValueOf[KS[C]],
+                                                      d: ValueOf[D[C-1]])
+                                               (using volume: List[(Int, Int, Int, Int, Int, Int, Int)]): layer.type =
+      val padding = volume(valueOf[C])._6
+      require((flp.value+2*padding-kl.value)%ks.value == 0 && (fbp.value+2*padding-kb.value)%ks.value == 0)
+      require((flp.value+2*padding-kl.value)/ks.value+1 == fl.value && (fbp.value+2*padding-kb.value)/ks.value+1 == fb.value)
       require(valueOf[O] == layer.kernels.size)
       require(layer.kernels.forall { it => it.length == kl.value && it.breadth == kb.value && it.depth == d.value })
       layer
