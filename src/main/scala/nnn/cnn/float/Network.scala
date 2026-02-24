@@ -107,8 +107,6 @@ case class Network[
     given Int = K
     require(shape(0) == valueOf[FL[K]] * valueOf[FB[K]] * valueOf[D[K]],
             s"layer ${given_Int} flattens to ${valueOf[FL[K]] * valueOf[FB[K]] * valueOf[D[K]]} and not to ${shape(0)}")
-    require(volume(K)._6 == 0,
-            s"padding on last ${if pattern(given_Int) then "convolutional" else "pooling"} layer ${given_Int} must be zero")
   }
 
   extension [L <: Int, B <: Int, D <: Int: ValueOf](self: FeatureMap[Float, L, B, D])
@@ -291,7 +289,14 @@ case class Network[
                   ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
           else
             given Int = K
-            DELTA = (~w ⋅ δ).--.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
+            val padding = volume(given_Int)._6
+            if padding == 0
+            then
+              DELTA = (~w ⋅ δ).--.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
+            else
+              type P = padding.type
+              given ValueOf[P] = ValueOf(padding)
+              DELTA = (~w ⋅ δ).--.reshape[FL[given_Int.type]].reshape[D[given_Int.type]].crop[P, P]
 
         for // CONVOLUTION|POOLING
           given Int <- maps.reverse
@@ -553,7 +558,7 @@ object Network:
 
   object Layer:
 
-    case class Convolution[
+    case class Convolutional[
       L <: Int,
       B <: Int,
       D <: Int,
@@ -562,11 +567,11 @@ object Network:
       kernels: Kernel[Float, L, B, D]*) extends Layer:
       require(valueOf[O] == kernels.size)
 
-    case class Pool[
+    case class Pooling[
       P <: Int,
       Q <: Int,
       S <: Int: ValueOf
-    ](pooling: Pooling[Float, P, Q, S],
+    ](pooling: nnn.cnn.Pooling[Float, P, Q, S],
       activation: nnn.float.Activation = nnn.float.Activation.Linear()) extends Layer
 
     case class Dense[N <: Int, O <: Int: ValueOf](neurons: Neuron[N]*) extends Layer:
@@ -578,12 +583,12 @@ object Network:
       this.neurons.foreach(_.bias = 0)
 
     extension (self: Layer)
-      def pooling[P <: Int, Q <: Int, S <: Int]: Pooling[Float, P, Q, S] = self.asInstanceOf[Pool[P, Q, S]].pooling
+      def pooling[P <: Int, Q <: Int, S <: Int]: nnn.cnn.Pooling[Float, P, Q, S] = self.asInstanceOf[Pooling[P, Q, S]].pooling
       def activation(using p: Boolean): nnn.float.Activation =
         if p
         then
-          self.asInstanceOf[Convolution[?, ?, ?, ?]].activation
+          self.asInstanceOf[Convolutional[?, ?, ?, ?]].activation
         else
-          self.asInstanceOf[Pool[?, ?, ?]].activation
-      def kernels[L <: Int, B <: Int, D <: Int]: Seq[Kernel[Float, L, B, D]] = self.asInstanceOf[Convolution[L, B, D, ?]].kernels
+          self.asInstanceOf[Pooling[?, ?, ?]].activation
+      def kernels[L <: Int, B <: Int, D <: Int]: Seq[Kernel[Float, L, B, D]] = self.asInstanceOf[Convolutional[L, B, D, ?]].kernels
       def neurons: Seq[Neuron[?]] = self.asInstanceOf[Dense[?, ?]].neurons

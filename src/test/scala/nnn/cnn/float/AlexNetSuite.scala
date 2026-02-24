@@ -43,7 +43,7 @@ class AlexNetSuite extends FunSuite:
 
     type PS[C <: Int] = C match { case 2 | 4 | 8 => 2 } // Pooling Stride
 
-    type N[L <: Int] = L match { case 8 => FL[8]*FB[8]*D[8] case 9 => 512 case 10 => 512 case 11 => 10 case 12 => 10 }
+    type N[L <: Int] = L match { case 8 => FL[8]*FB[8]*D[8] case 9 | 10 => 512 case 11 | 12 => 10 }
 
     given List[Boolean] = false :: true :: false :: true :: false :: true :: true :: true :: false :: Nil
 
@@ -62,22 +62,26 @@ class AlexNetSuite extends FunSuite:
 
     given List[Int] = 9216/*=6*6*256*/ :: 512 :: 512 :: 10 :: 10 :: Nil
 
+    print("Initializing AlexNet...")
+
     val an = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 8, N, 12](
       loss = CCE[10](),
       learningRate = 0.01,
-      Layer.Convolution[11, 11, 3, 96](ReLU, Kernel[Float, 11, 11, 3](gaussian)[96]*),
-      Layer.Pool[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue), Linear()),
-      Layer.Convolution[5, 5, 96, 256](ReLU, Kernel.bias[Float](1)[5, 5, 96](gaussian)[256]*),
-      Layer.Pool[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue), Linear()),
-      Layer.Convolution[3, 3, 256, 384](ReLU, Kernel[Float, 3, 3, 256](gaussian)[384]*),
-      Layer.Convolution[3, 3, 384, 384](ReLU, Kernel.bias[Float](1)[3, 3, 384](gaussian)[384]*),
-      Layer.Convolution[3, 3, 384, 256](ReLU, Kernel.bias[Float](1)[3, 3, 384](gaussian)[256]*),
-      Layer.Pool[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue), Linear()),
+      Layer.Convolutional[11, 11, 3, 96](ReLU, Kernel[Float, 11, 11, 3](gaussian)[96]*),
+      Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue)),
+      Layer.Convolutional[5, 5, 96, 256](ReLU, Kernel.bias[Float](1)[5, 5, 96](gaussian)[256]*),
+      Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue)),
+      Layer.Convolutional[3, 3, 256, 384](ReLU, Kernel[Float, 3, 3, 256](gaussian)[384]*),
+      Layer.Convolutional[3, 3, 384, 384](ReLU, Kernel.bias[Float](1)[3, 3, 384](gaussian)[384]*),
+      Layer.Convolutional[3, 3, 384, 256](ReLU, Kernel.bias[Float](1)[3, 3, 384](gaussian)[256]*),
+      Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue)),
       Layer.Dense[9216, 512](Neuron.bias(1)[9216, 512](gaussian, ReLU)*),
       Layer.Dense[512, 512](Neuron.bias(1)[512, 512](gaussian, ReLU)*),
       Layer.Dense[512, 10](Neuron.bias(1)[512, 10](gaussian, ReLU)*),
       Layer.Softmax[10](gaussian)
     )
+
+    println(" Done.")
 
     val data = Data[227, 227, 3, 10]({
       val read = 1 // 10000
