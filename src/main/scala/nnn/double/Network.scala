@@ -122,7 +122,7 @@ case class Network[
           then
             delta = (~weights(l) ⋅ delta).-- ⊙ prime(l-1, net(l-1))
 
-      // GRADIENT DESCENT
+      // STOCHASTIC GRADIENT DESCENT
 
       for
         l <- cols
@@ -131,7 +131,7 @@ case class Network[
 
         for
           n <- rows
-          update0 = update(n)(0)
+          update0 = update(n, 0)
           update1 = update(n).--
         do
           layers(l).neurons(n).bias += update0

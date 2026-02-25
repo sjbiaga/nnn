@@ -5,8 +5,9 @@ import scala.compiletime.ops.int.{ +, -, /, * }
 
 import scala.reflect.ClassTag
 
-import spire.algebra.Ring
-import spire.implicits.*
+import spire.math.pow
+import spire.algebra.{ Field, Ring }
+import spire.implicits.{ pow => _, * }
 
 import Image.*
 
@@ -22,6 +23,9 @@ case class Image[
   val length = volume.data.rows
   val breadth = volume.data.cols
   val size = length * breadth * depth
+
+  inline def apply(i: Int, j: Int, k: Int): A =
+    volume.data(i, j, k)
 
   inline def apply(k: Int): Matrix[A, L, B] =
     volume.data(k)
@@ -50,6 +54,40 @@ case class Image[
       type P = padding.type
       given ValueOf[P] = ValueOf(padding)
       Image[A, L+2*P, B+2*P, D](label, volume.data.pad[P, P])
+
+  /**
+    * local response normalization
+    */
+  def lrn(k: Double, n: Int, α: Double, β: Double)
+         (using Conversion[A, Double], Conversion[Double, A])
+         (using Field[A], Numeric[A]): (Tensor[A, L, B, D], Image[A, L, B, D]) =
+                                    //  ^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^
+                                    //  local sum           normalized values
+    val N = depth
+    val n_2 = n/2
+    val ps = {
+      for
+        i <- 0 until length
+        j <- 0 until breadth
+      yield
+        for
+          c <- 0 until N
+          s = 0 max (c-n_2)
+          e = (N-1) min (c+n_2)
+        yield
+          val S = k + α * {
+            for
+              h <- s to e
+              it = this(i, j, h)
+            yield
+              it*it
+          }.sum
+          (S: A, (this(i, j, c) / pow(S, β)): A)
+    }.flatten
+    given ValueOf[L] = ValueOf(length.asInstanceOf[L])
+    given ValueOf[B] = ValueOf(breadth.asInstanceOf[B])
+    given ValueOf[D] = ValueOf(depth.asInstanceOf[D])
+    Tensor[A][L, B, D](ps.map(_._1)*) -> Image[A, L, B, D](label, Tensor[A][L, B, D](ps.map(_._2)*))
 
   /**
     * flatten

@@ -94,15 +94,15 @@ class AlexNetSuite extends FunSuite:
 
     val an = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 8, N, 12](
       loss = CCE[10](),
-      learningRate = 0.01,
-      C[1, 96](Layer.Convolutional[11, 11, 3, 96](ReLU, Kernel[Float, 11, 11, 3](gaussian)[96]*)),      // C1
-      P[2](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                // P1
-      C[3, 256](Layer.Convolutional[5, 5, 96, 256](ReLU, Kernel.bias(1f)[5, 5, 96](gaussian)[256]*)),   // C2
-      P[4](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                // P2
-      C[5, 384](Layer.Convolutional[3, 3, 256, 384](ReLU, Kernel[Float, 3, 3, 256](gaussian)[384]*)),   // C3
-      C[6, 384](Layer.Convolutional[3, 3, 384, 384](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[384]*)), // C4
-      C[7, 256](Layer.Convolutional[3, 3, 384, 256](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[256]*)), // C5
-      P[8](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                // P3
+      (0.01, 0.9, 0.0005),
+      C[1, 96](Layer.ConvolutionalLRN[11, 11, 3, 96](2, 5, 1E-4, 0.75, ReLU, Kernel.bias(0f)[11, 11, 3](gaussian)[96]*)),   // C1
+      P[2](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                                    // P1
+      C[3, 256](Layer.ConvolutionalLRN[5, 5, 96, 256](2, 5, 1E-4, 0.75, ReLU, Kernel.bias(1f)[5, 5, 96](gaussian)[256]*)),  // C2
+      P[4](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                                    // P2
+      C[5, 384](Layer.Convolutional[3, 3, 256, 384](ReLU, Kernel.bias(0f)[3, 3, 256](gaussian)[384]*)),                     // C3
+      C[6, 384](Layer.Convolutional[3, 3, 384, 384](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[384]*)),                     // C4
+      C[7, 256](Layer.Convolutional[3, 3, 384, 256](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[256]*)),                     // C5
+      P[8](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                                    // P3
       D[9](Layer.Dropout[9216, 512](0.5, Neuron.bias(1f)[9216, 512](gaussian, ReLU)*)),
       D[10](Layer.Dropout[512, 512](0.5, Neuron.bias(1f)[512, 512](gaussian, ReLU)*)),
       D[11](Layer.Dense[512, 10](Neuron.bias(1f)[512, 10](gaussian, ReLU)*)),

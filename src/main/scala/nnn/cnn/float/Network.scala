@@ -4,6 +4,7 @@ package float
 
 import scala.compiletime.ops.int.{ +, -, /, * }
 
+import spire.math.pow
 import spire.implicits.FloatAlgebra
 
 import nnn.float.Util.{ dropout, softmax, given }
@@ -27,13 +28,14 @@ case class Network[
   N[_ <: Int] <: Int, // dense
   M <: Int: ValueOf // total layers
 ](loss: nnn.float.Loss[N[M]],
-  learningRate: Float,
+  parametersSGD: (Float, Float, Float),
   layers: Layer*
 )(using
   pattern: List[Boolean],
   volume: List[(Int, Int, Int, Int, Int, Int, Int)],
   shape: List[Int]
 ):
+  val (learningRate, momentumCoefficient, decayFactor) = parametersSGD
 
   protected implicit def _valueOfFL[C <: Int](using k: Int): ValueOf[FL[C]] = ValueOf(volume(k)._1.asInstanceOf[FL[C]])
   protected implicit def _valueOfFB[C <: Int](using k: Int): ValueOf[FB[C]] = ValueOf(volume(k)._2.asInstanceOf[FB[C]])
@@ -165,6 +167,11 @@ case class Network[
     var NBIAS: List[Vector[Float, ?]] = Nil // C|P
     var nabla: List[Matrix[Float, ?, ?]] = Nil // FC
 
+    var VELOCITY: List[Seq[Tensor[Float, ?, ?, ?]]] = Nil // C
+    var VBETA: List[Vector[Float, ?]] = Nil // C|P
+    var VBIAS: List[Vector[Float, ?]] = Nil // C|P
+    var velocity: List[Matrix[Float, ?, ?]] = Nil // FC
+
     for // FULLY CONNECTED
       given Int <- cols.reverse
       l = given_Int-1
@@ -197,6 +204,41 @@ case class Network[
         nabla ::= null
         NABLA ::= null
 
+    if decayFactor > 0
+    then
+
+      for // FULLY CONNECTED
+        given Int <- cols.reverse
+        l = given_Int-1
+        given Long = l.toLong
+      do
+        velocity ::= Matrix[Float].zero[N[given_Int.type], N[l.type]+1]
+
+      for // CONVOLUTION|POOLING
+        given Int <- maps.reverse
+        l = given_Int-1
+        given Boolean = pattern(given_Int)
+      do
+        if given_Boolean
+        then // CONVOLUTION
+          VBETA ::= null
+          VBIAS ::= Vector[Float].zero[D[given_Int.type]]
+          velocity ::= null
+          VELOCITY ::= (1 to valueOf[D[given_Int.type]]).map { _ =>
+                      given ValueOf[D[l.type]] = ValueOf(volume(l)._7.asInstanceOf[D[l.type]])
+                      Tensor[Float].zero[KL[given_Int.type], KB[given_Int.type], D[l.type]]
+                    }
+        else // POOLING
+          layers(l).pooling match
+            case subsampling(_, _) =>
+              VBETA ::= Vector[Float].zero[D[given_Int.type]]
+              VBIAS ::= Vector[Float].zero[D[given_Int.type]]
+            case _ =>
+              VBETA ::= null
+              VBIAS ::= null
+          velocity ::= null
+          VELOCITY ::= null
+
     // TRAINING
 
     for
@@ -212,6 +254,7 @@ case class Network[
 
         var NET: List[FeatureMap[Float, ?, ?, ?]] = Nil
         var OUT: List[FeatureMap[Float, ?, ?, ?]] = List(input.image)
+        var LRN: List[(Tensor[Float, ?, ?, ?], Image[Float, ?, ?, ?])] = List(null)
 
         for // CONVOLUTION|POOLING
           given Int <- maps
@@ -229,11 +272,18 @@ case class Network[
               val pooling = layers(l).pooling[PL[given_Int.type], PB[given_Int.type], PS[given_Int.type]]
               pooling(featureMapIn)
           }.pad(padding).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
+          val featureMapOutʹ = featureMapOut --> layers(l).activation
           NET ::= featureMapOut
-          OUT ::= featureMapOut --> layers(l).activation
+          OUT ::= featureMapOutʹ
+          layers(l) match
+            case lrn: ConvolutionalLRN[?, ?, ?, ?] =>
+              LRN ::= featureMapOutʹ.lrn(lrn.k, lrn.n, lrn.α, lrn.β)
+            case _ =>
+              LRN ::= null
 
         NET = NET.reverse
         OUT = OUT.reverse
+        LRN = LRN.reverse
 
         val flattened = {
           given Int = K
@@ -320,6 +370,34 @@ case class Network[
           given Boolean = pattern(given_Int)
           padding = volume(l)._6
         do
+          layers(l) match
+            case lrn: ConvolutionalLRN[?, ?, ?, ?] =>
+              val a = OUT(given_Int).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
+              val b = LRN(given_Int)._2.asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
+              val S = LRN(given_Int)._1.asInstanceOf[Tensor[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
+              val δ = DELTA.asInstanceOf[Tensor[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
+              val N = a.depth
+              val n = lrn.n
+              val α = lrn.α
+              val β = lrn.β
+              val n_2 = n/2
+              DELTA = Tensor[Float][FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]({
+                for
+                  i <- 0 until a.length
+                  j <- 0 until a.breadth
+                yield
+                  for
+                    c <- 0 until N
+                    s = 0 max (c-n_2)
+                    e = (N-1) min (c+n_2)
+                  yield δ(i, j, c) * pow(S(i, j, c), β).toFloat - {
+                    for
+                      h <- s to e
+                    yield
+                      δ(i, j, h) * b(i, j, h) / S(i, j, h)
+                  }.sum * a(i, j, c) * 2*α*β / n
+              }.flatten*)
+            case _ =>
           val h = OUT(l).asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
           val a = NET(l).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
           val δ = DELTA.asInstanceOf[Tensor[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
@@ -420,63 +498,133 @@ case class Network[
                 given ValueOf[P] = ValueOf(padding)
                 DELTA = pooling(h, pa, pδ).crop[P, P]
 
-      // GRADIENT DESCENT
+      if decayFactor > 0
+      then // MOMENTUM GRADIENT DESCENT
 
-      for // CONVOLUTION|POOLING
-        given Int <- maps
-        l = given_Int-1
-        given Boolean = pattern(given_Int)
-      do
-        if given_Boolean
-        then // CONVOLUTION
-          for
-            k <- 0 until layers(l).kernels.size
-          do
-            val ∇ = NABLA(l)(k).asInstanceOf[Tensor[Float, KL[given_Int.type], KB[given_Int.type], D[l.type]]]
+        for // CONVOLUTION|POOLING
+          given Int <- maps
+          l = given_Int-1
+          given Boolean = pattern(given_Int)
+        do
+          if given_Boolean
+          then // CONVOLUTION
+            for
+              k <- 0 until layers(l).kernels.size
+            do
+              val ∇ = NABLA(l)(k).asInstanceOf[Tensor[Float, KL[given_Int.type], KB[given_Int.type], D[l.type]]]
+              val v = VELOCITY(l)(k).asInstanceOf[Tensor[Float, KL[given_Int.type], KB[given_Int.type], D[l.type]]]
+              val update = ∇.op(-learningRate * _ / batch)
+              val weights = layers(l).kernels[KL[given_Int.type], KB[given_Int.type], D[l.type]](k).volume.data
+              v.velocityUpdate(momentumCoefficient, decayFactor, learningRate)(weights, update)
+              layers(l).kernels(k).volume.data := weights + v
+            val ∇ = NBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+            val v = VBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
             val update = ∇.op(-learningRate * _ / batch)
-            val weights = layers(l).kernels[KL[given_Int.type], KB[given_Int.type], D[l.type]](k).volume.data
-            layers(l).kernels(k).volume.data := weights + update
-          val ∇ = NBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+            val biases = Vector[Float][D[given_Int.type]](layers(l).kernels.map(_.bias)*)
+            v.velocityUpdate(momentumCoefficient, decayFactor, learningRate)(biases, update)
+            for
+              k <- 0 until v.size
+            do
+              layers(l).kernels(k).bias += v(k)
+            NBIAS(l).reset
+            NABLA(l).foreach(_.reset)
+          else // POOLING
+            layers(l).pooling match
+              case ss @ subsampling(β: Vector[Float, D[given_Int.type]], b: Vector[Float, D[given_Int.type]]) =>
+                {
+                  val ∇ = NBETA(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+                  val v = VBETA(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+                  val update = ∇.op(-learningRate * _ / batch)
+                  v.velocityUpdate(momentumCoefficient, decayFactor, learningRate)(β, update)
+                  ss.beta := β + v
+                }
+                {
+                  val ∇ = NBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+                  val v = VBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+                  val update = ∇.op(-learningRate * _ / batch)
+                  v.velocityUpdate(momentumCoefficient, decayFactor, learningRate)(b, update)
+                  ss.bias := b + v
+                }
+                NBETA(l).reset
+                NBIAS(l).reset
+              case _ =>
+
+        for // FULLY CONNECTED
+          given Int <- cols
+          l = given_Int-1
+          given Long = l.toLong
+        do
+          val ∇ = nabla(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
+          val v = velocity(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
           val update = ∇.op(-learningRate * _ / batch)
           for
-            k <- 0 until layers(l).kernels.size
+            n <- rows
           do
-            layers(l).kernels(k).bias += update(k)
-          NBIAS(l).reset
-          NABLA(l).foreach(_.reset)
-        else // POOLING
-          layers(l).pooling match
-            case ss @ subsampling(β: Vector[Float, D[given_Int.type]], b: Vector[Float, D[given_Int.type]]) =>
-              {
-                val ∇ = NBETA(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
-                val update = ∇.op(-learningRate * _ / batch)
-                ss.beta := β + update
-              }
-              {
-                val ∇ = NBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
-                val update = ∇.op(-learningRate * _ / batch)
-                ss.bias := b + update
-              }
-              NBETA(l).reset
-              NBIAS(l).reset
-            case _ =>
+            var weights = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]].++(layers(l).neurons(n).bias)
+            v.velocityUpdate(n)(momentumCoefficient, decayFactor, learningRate)(weights, update)
+            weights = weights + v(n)
+            layers(l).neurons(n).bias = weights(0)
+            layers(l).neurons(n).weights := weights.--
 
-      for // FULLY CONNECTED
-        given Int <- cols
-        l = given_Int-1
-      do
-        val ∇ = nabla(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
-        val update = ∇.op(-learningRate * _ / batch)
-        for
-          n <- rows
-          update0 = update(n)(0)
-          update1 = update(n).--
+          nabla(l).reset
+
+      else // STOCHASTIC GRADIENT DESCENT
+
+        for // CONVOLUTION|POOLING
+          given Int <- maps
+          l = given_Int-1
+          given Boolean = pattern(given_Int)
         do
-          val weights = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]
-          layers(l).neurons(n).bias += update0
-          layers(l).neurons(n).weights := weights + update1
+          if given_Boolean
+          then // CONVOLUTION
+            for
+              k <- 0 until layers(l).kernels.size
+            do
+              val ∇ = NABLA(l)(k).asInstanceOf[Tensor[Float, KL[given_Int.type], KB[given_Int.type], D[l.type]]]
+              val update = ∇.op(-learningRate * _ / batch)
+              val weights = layers(l).kernels[KL[given_Int.type], KB[given_Int.type], D[l.type]](k).volume.data
+              layers(l).kernels(k).volume.data := weights + update
+            val ∇ = NBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+            val update = ∇.op(-learningRate * _ / batch)
+            for
+              k <- 0 until layers(l).kernels.size
+            do
+              layers(l).kernels(k).bias += update(k)
+            NBIAS(l).reset
+            NABLA(l).foreach(_.reset)
+          else // POOLING
+            layers(l).pooling match
+              case ss @ subsampling(β: Vector[Float, D[given_Int.type]], b: Vector[Float, D[given_Int.type]]) =>
+                {
+                  val ∇ = NBETA(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+                  val update = ∇.op(-learningRate * _ / batch)
+                  ss.beta := β + update
+                }
+                {
+                  val ∇ = NBIAS(l).asInstanceOf[Vector[Float, D[given_Int.type]]]
+                  val update = ∇.op(-learningRate * _ / batch)
+                  ss.bias := b + update
+                }
+                NBETA(l).reset
+                NBIAS(l).reset
+              case _ =>
 
-        nabla(l).reset
+        for // FULLY CONNECTED
+          given Int <- cols
+          l = given_Int-1
+        do
+          val ∇ = nabla(l).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
+          val update = ∇.op(-learningRate * _ / batch)
+          for
+            n <- rows
+            update0 = update(n, 0)
+            update1 = update(n).--
+          do
+            val weights = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]
+            layers(l).neurons(n).bias += update0
+            layers(l).neurons(n).weights := weights + update1
+
+          nabla(l).reset
 
   /**
     * predict
@@ -523,6 +671,29 @@ case class Network[
 
 
 object Network:
+
+  extension [M <: Int, N <: Int](self: Matrix[Float, M, N])
+    def velocityUpdate(m: Int)(momentumCoefficient: Float, decayFactor: Float, learningRate: Float)(weights: Vector[Float, N], update: Matrix[Float, M, N]): Unit =
+      for
+        n <- 0 until self.cols
+      do
+        self(m->n) = momentumCoefficient*self(m, n) - decayFactor*learningRate*weights(n) - update(m, n)
+
+  extension [M <: Int, N <: Int, O <: Int](self: Tensor[Float, M, N, O])
+    def velocityUpdate(momentumCoefficient: Float, decayFactor: Float, learningRate: Float)(biases: Tensor[Float, M, N, O], update: Tensor[Float, M, N, O]): Unit =
+      for
+        i <- 0 until self.rows
+        j <- 0 until self.cols
+        k <- 0 until self.depth
+      do
+        self((i, j, k)) = momentumCoefficient*self(i, j, k) - decayFactor*learningRate*biases(i, j, k) - update(i, j , k)
+
+  extension [N <: Int](self: Vector[Float, N])
+    def velocityUpdate(momentumCoefficient: Float, decayFactor: Float, learningRate: Float)(biases: Vector[Float, N], update: Vector[Float, N]): Unit =
+      for
+        n <- 0 until self.rows
+      do
+        self(n) = momentumCoefficient*self(n) - decayFactor*learningRate*biases(n) - update(n)
 
   case class Input[
     L <: Int,
@@ -582,6 +753,16 @@ object Network:
     ](activation: nnn.float.Activation,
       kernels: Kernel[Float, L, B, D]*) extends Layer:
       require(valueOf[O] == kernels.size)
+
+    class ConvolutionalLRN[
+      L <: Int,
+      B <: Int,
+      D <: Int,
+      O <: Int: ValueOf
+    ](val k: Float, val n: Int, val α: Float, val β: Float,
+      activation: nnn.float.Activation,
+      kernels: Kernel[Float, L, B, D]*)
+        extends Convolutional[L, B, D, O](activation, kernels*)
 
     case class Pooling[
       P <: Int,

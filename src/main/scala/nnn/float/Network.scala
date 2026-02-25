@@ -148,7 +148,7 @@ case class Network[
             delta = (~w ⋅ δ).--
                   ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
 
-      // GRADIENT DESCENT
+      // STOCHASTIC GRADIENT DESCENT
 
       for
         given Int <- cols
@@ -159,7 +159,7 @@ case class Network[
 
         for
           n <- rows
-          update0 = update(n)(0)
+          update0 = update(n, 0)
           update1 = update(n).--
         do
           val weights = layers(l).neurons(n).weights.asInstanceOf[Vector[Float, N[l.type]]]

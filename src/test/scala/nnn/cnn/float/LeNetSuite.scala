@@ -90,7 +90,7 @@ class LeNetSuite extends FunSuite:
 
     // val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
     //   loss = CCE[10](),
-    //   learningRate = 0.01,
+    //   (0.01, 0, 0),
     //   C[1, 6](Layer.Convolutional[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](glorot[5, 5, 1, 6])[6]*)),
     //   P[2](Layer.Pooling[2, 2, 2](subsampling[Float, 2, 2, 2, 6](null), LeCunnTanh)),
     //   C[3, 16](Layer.Convolutional[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](glorot[5, 5, 6, 16])[16]*)),
@@ -103,7 +103,7 @@ class LeNetSuite extends FunSuite:
 
     val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
       loss = CCE[10](),
-      learningRate = 0.01,
+      (0.01, 0, 0),
       C[1, 6](Layer.Convolutional[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](kaiming[5, 5, 1]())[6]*)),
       P[2](Layer.Pooling[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue))),
       C[3, 16](Layer.Convolutional[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](kaiming[5, 5, 6]())[16]*)),
