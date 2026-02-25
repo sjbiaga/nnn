@@ -103,8 +103,8 @@ class AlexNetSuite extends FunSuite:
       C[6, 384](Layer.Convolutional[3, 3, 384, 384](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[384]*)), // C4
       C[7, 256](Layer.Convolutional[3, 3, 384, 256](ReLU, Kernel.bias(1f)[3, 3, 384](gaussian)[256]*)), // C5
       P[8](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                // P3
-      D[9](Layer.Dense[9216, 512](Neuron.bias(1f)[9216, 512](gaussian, ReLU)*)),
-      D[10](Layer.Dense[512, 512](Neuron.bias(1f)[512, 512](gaussian, ReLU)*)),
+      D[9](Layer.Dropout[9216, 512](0.5, Neuron.bias(1f)[9216, 512](gaussian, ReLU)*)),
+      D[10](Layer.Dropout[512, 512](0.5, Neuron.bias(1f)[512, 512](gaussian, ReLU)*)),
       D[11](Layer.Dense[512, 10](Neuron.bias(1f)[512, 10](gaussian, ReLU)*)),
       D[12](Layer.Softmax[10](gaussian))
     )

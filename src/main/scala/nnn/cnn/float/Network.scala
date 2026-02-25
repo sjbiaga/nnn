@@ -6,7 +6,7 @@ import scala.compiletime.ops.int.{ +, -, /, * }
 
 import spire.implicits.FloatAlgebra
 
-import nnn.float.Util.{ softmax, given }
+import nnn.float.Util.{ dropout, softmax, given }
 import Image.*
 import Pooling.*
 import Network.*
@@ -57,6 +57,7 @@ case class Network[
 
   require(K+1 == pattern.size)
   require(M == layers.size)
+  require(!layers(M-1).isInstanceOf[Dropout[?, ?]])
 
   val softmax_cross_entropy = layers(M-1).isInstanceOf[Softmax[?]]
 
@@ -241,6 +242,7 @@ case class Network[
 
         var net: List[Vector[Float, ?]] = List.fill(maps.size)(null)
         var out: List[Vector[Float, ?]] = List.fill(maps.size)(null)
+        var mask: List[Vector[Float, ?]] = List.fill(maps.size)(null)
 
         out ::= flattened.++(1)
 
@@ -252,10 +254,18 @@ case class Network[
           val x = out.head.asInstanceOf[Vector[Float, N[l.type]+1]]
           val a = w ⋅ x
           net ::= a
-          out ::= apply(a).++(1)
+          layers(l) match
+            case d: Layer.Dropout[?, ?] =>
+              val m = dropout[N[given_Int.type]](d.keep)
+              mask ::= m
+              out ::= (apply(a) ⊙ m).++(1)
+            case _ =>
+              mask ::= null
+              out ::= apply(a).++(1)
 
         net = net.reverse
         out = out.reverse
+        mask = mask.reverse
 
         val y = output.answer
         val ŷ = out(M).asInstanceOf[Vector[Float, N[M]+1]].--
@@ -284,20 +294,25 @@ case class Network[
           nabla(l) := ∇ + δ ⋅ h
 
           val w = weights(l-K).asInstanceOf[Matrix[Float, N[given_Int.type], N[l.type]+1]]
+          val δʹ: Vector[Float, N[l.type]] =
+            layers(l-1) match
+              case _: Layer.Dropout[?, ?] =>
+                (~w ⋅ δ).-- ⊙ mask(l-1).asInstanceOf[Vector[Float, N[l.type]]]
+              case _ =>
+                (~w ⋅ δ).--
           if l > K
           then
-            delta = (~w ⋅ δ).--
-                  ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
+            delta = δʹ ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
           else
             given Int = K
             val padding = volume(given_Int)._6
             if padding == 0
             then
-              DELTA = (~w ⋅ δ).--.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
+              DELTA = δʹ.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
             else
               type P = padding.type
               given ValueOf[P] = ValueOf(padding)
-              DELTA = (~w ⋅ δ).--.reshape[FL[given_Int.type]].reshape[D[given_Int.type]].crop[P, P]
+              DELTA = δʹ.reshape[FL[given_Int.type]].reshape[D[given_Int.type]].crop[P, P]
 
         for // CONVOLUTION|POOLING
           given Int <- maps.reverse
@@ -577,6 +592,9 @@ object Network:
 
     case class Dense[N <: Int, O <: Int: ValueOf](neurons: Neuron[N]*) extends Layer:
       require(valueOf[O] == neurons.size)
+
+    class Dropout[N <: Int, O <: Int: ValueOf](val keep: Float, neurons: Neuron[N]*)
+        extends Dense[N, O](neurons*)
 
     class Softmax[N <: Int: ValueOf](initialization: Initialization,
                                      activation: nnn.float.Activation = nnn.float.Activation.Softmax)

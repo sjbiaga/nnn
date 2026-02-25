@@ -1,6 +1,8 @@
 package nnn
 package float
 
+import breeze.stats.distributions.Rand.VariableSeed.randBasis
+
 import spire.math.{ exp => _, log => _, * }
 import spire.algebra.Ring
 import spire.implicits.*
@@ -18,6 +20,10 @@ object Util:
 
   inline def kronecker(i: Int)(j: Int): Float =
     if i == j then 1f else 0f
+
+  def dropout[N <: Int: ValueOf](keep: Float, inverse: Boolean = true): Vector[Float, N] =
+    val b = breeze.stats.distributions.Bernoulli(keep)
+    Vector[Float](b.sample(valueOf[N]).map(if _ then (if inverse then 1f/keep else 1f) else 0f)*)
 
   given [N: Numeric]: Conversion[N, Float] with
     def apply(self: N): Float = self match
