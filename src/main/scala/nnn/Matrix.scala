@@ -34,6 +34,8 @@ case class Matrix[
   val cols = underlying(0).size
   val size = rows * cols
 
+  val shape = (rows, cols)
+
   def apply(i: Int): Vector[A, N] =
     require(0 <= i && i < rows)
     Vector[A, N](underlying(i).toArray)

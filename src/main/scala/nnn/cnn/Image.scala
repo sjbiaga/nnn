@@ -19,10 +19,12 @@ case class Image[
   D <: Int
 ](var label: Any, volume: Volume[A, L, B, D]) { self =>
 
-  val depth = volume.data.depth
   val length = volume.data.rows
   val breadth = volume.data.cols
+  val depth = volume.data.depth
   val size = length * breadth * depth
+
+  val shape = volume.data.shape
 
   inline def apply(i: Int, j: Int, k: Int): A =
     volume.data(i, j, k)

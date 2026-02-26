@@ -130,7 +130,7 @@ class AlexNetSuite extends FunSuite:
     print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
     an(data, batch, epochs) {
-      // case (count, done) => if count % 1 == 0 && done % 1 == 0 =>
+      // case (count, done) if count % 1 == 0 && done % 1 == 0 =>
       //   print(s" Passing through $count epochs and $done images...")
       case _ =>
     }

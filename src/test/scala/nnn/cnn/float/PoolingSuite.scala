@@ -34,7 +34,7 @@ class PoolingSuite extends FunSuite:
                                    4, 4, 4, 5, 5, 5,
                                    4, 4, 4, 5, 5, 5)
 
-    assertEquals(p(h, a, δ), r)
+    assertEquals(p[6, 6, 1](h.shape, a, δ), r)
   }
 
   test("max gradient distribution w/ stride 3") {
@@ -59,7 +59,7 @@ class PoolingSuite extends FunSuite:
                                    0, 4, 0, 0, 5, 0,
                                    0, 0, 0, 0, 0, 0)
 
-    assertEquals(p(h, a, δ), r)
+    assertEquals(p[6, 6, 1](h.shape, a, δ), r)
   }
 
   test("overlapping max gradient distribution w/ stride 3") {
@@ -84,5 +84,5 @@ class PoolingSuite extends FunSuite:
                                    0, 0, 0, 0, 0, 0,
                                    0, 0, 0, 9, 0, 0)
 
-    assertEquals(p(h, a, δ), r)
+    assertEquals(p[6, 6, 1](h.shape, a, δ), r)
   }

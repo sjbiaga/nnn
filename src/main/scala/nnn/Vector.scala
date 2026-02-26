@@ -33,6 +33,8 @@ case class Vector[
   val cols = size
   val rows = size
 
+  val shape = Tuple1(rows)
+
   def apply(i: Int): A =
     require(0 <= i && i < rows)
     underlying(i)

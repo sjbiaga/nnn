@@ -37,6 +37,8 @@ case class Tensor[
   val depth = underlying(0)(0).size
   val size = rows * cols * depth
 
+  val shape = (rows, cols, depth)
+
   def apply(k: Int): Matrix[A, M, N] =
     require(0 <= k && k < depth)
     Matrix[A, M, N](underlying.map(_.map(_(k))))

@@ -246,6 +246,7 @@ case class Network[
 
     for
       count <- 0 until epochs
+      _ = if count > 0 then blink(count-1, data.io.size) else ()
       done <- 0 until data.io.size by batch
       _ = blink(count, done)
       weights = this()
@@ -266,7 +267,13 @@ case class Network[
           given Boolean = pattern(given_Int)
           padding = volume(given_Int)._6
         do
-          val featureMapIn = OUT.head.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]].pad(padding)
+          val featureMapIn = {
+            if l > 0 && layers(l-1).isInstanceOf[ConvolutionalLRN[?, ?, ?, ?]]
+            then
+              LRN.head._2.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
+            else
+              OUT.head.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
+          }.pad(padding)
           PAD ::= featureMapIn
           var featureMapOut = {
             if given_Boolean
@@ -460,12 +467,6 @@ case class Network[
                     given ValueOf[P] = ValueOf(padding)
                     DELTA = DELTA.crop[P, P]
           else // POOLING
-            val h =
-              if layers(l-1).isInstanceOf[ConvolutionalLRN[?, ?, ?, ?]]
-              then
-                LRN(l)._2.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
-              else
-                OUT(l).asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
             type P = (FL[l.type] - PL[given_Int.type]) / PS[given_Int.type] + 1
             type Q = (FB[l.type] - PB[given_Int.type]) / PS[given_Int.type] + 1
             val pa = a.asInstanceOf[FeatureMap[Float, P, Q, D[l.type]]]
@@ -495,7 +496,7 @@ case class Network[
               case _ =>
             if l > 0
             then
-              DELTA = pooling(h, pa, pδ)
+              DELTA = pooling(OUT(l).shape, pa, pδ)
               if padding > 0
               then
                 type P = padding.type

@@ -69,15 +69,16 @@ enum Pooling[
     M <: Int,
     N <: Int,
     O <: Int
-  ](h: FeatureMap[A, M, N, O],
+  ](shape: (Int, Int, Int),
     a: FeatureMap[A, (M-P)/S+1, (N-Q)/S+1, O],
     δ: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]
   ): Tensor[A, M, N, O] =
-    val result = Array.fill(h.length, h.breadth, h.depth)(Ring[A].zero)
+    val (length, breadth, depth) = shape
+    val result = Array.fill(length, breadth, depth)(Ring[A].zero)
     for
-      d <- 0 until h.depth
-      i <- 0 until h.length-rows+1 by stride
-      j <- 0 until h.breadth-cols+1 by stride
+      d <- 0 until depth
+      i <- 0 until length-rows+1 by stride
+      j <- 0 until breadth-cols+1 by stride
       iʹ = i/stride
       jʹ = j/stride
     do
