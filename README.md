@@ -103,9 +103,9 @@ It takes about 16 hours (on an Intel i5 CPU at 2.90GHz) to train the entire shuf
 test images with an accuracy of 98%.
 
 An experimental reduced version of `AlexNet` with 10 classes and 512 neurons in
-the dense layers (instead of 1000 and 4096), and without the original optimizations,
-is also included for purpose of demonstration, but disabled because of being too
-slow. The `CIFAR-10` database must be downloaded:
+the dense layers (instead of 1000 and 4096), is also included for purpose of
+demonstration, but disabled because of being too slow. The `CIFAR-10` database
+must be downloaded:
 
     https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz
 

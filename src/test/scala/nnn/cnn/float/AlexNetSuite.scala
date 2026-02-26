@@ -61,7 +61,7 @@ class AlexNetSuite extends FunSuite:
 
     type KB[C <: Int] = C match { case 1 => 11 case 3 => 5 case 5 | 6 | 7 => 3 } // Kernel Breadth
 
-    type KS[C <: Int] = C match { case 1 => 4 case 3 => 1 case 5 | 6 | 7 => 1 } // Kernel Stride
+    type KS[C <: Int] = C match { case 1 => 4 case 3 | 5 | 6 | 7 => 1 } // Kernel Stride
 
     type D[C <: Int] = C match { case 0 => 3 case 1 | 2 => 96 case 3 | 4 | 7 | 8 => 256 case 5 | 6 => 384 } // Feature/Kernel/Pooling Depth
 
@@ -77,15 +77,15 @@ class AlexNetSuite extends FunSuite:
 
     // true     FL   FB   KL   KB   KS   pad  D
     // false    FL   FB   PL   PB   PS   pad  D
-    given List[(Int, Int, Int, Int, Int, Int, Int)] = (227, 227,  0,  0, 0, 0,   3) // image
-                                                   :: ( 55,  55, 11, 11, 4, 0,  96) // convolutional
-                                                   :: ( 27,  27,  3,  3, 2, 0,  96) // max pooling
-                                                   :: ( 27,  27,  5,  5, 1, 2, 256) // convolutional
-                                                   :: ( 13,  13,  3,  3, 2, 0, 256) // max pooling
-                                                   :: ( 13,  13,  3,  3, 1, 1, 384) // convolutional
-                                                   :: ( 13,  13,  3,  3, 1, 1, 384) // convolutional
-                                                   :: ( 13,  13,  3,  3, 1, 1, 256) // convolutional
-                                                   :: (  6,   6,  3,  3, 2, 0, 256) // max pooling
+    given List[(Int, Int, Int, Int, Int, Int, Int)] = (227, 227,  0,  0, 0, 0,   3) // 0 image
+                                                   :: ( 55,  55, 11, 11, 4, 0,  96) // 1 convolutional C1
+                                                   :: ( 27,  27,  3,  3, 2, 0,  96) // 2 max pooling   P1
+                                                   :: ( 27,  27,  5,  5, 1, 2, 256) // 3 convolutional C2
+                                                   :: ( 13,  13,  3,  3, 2, 0, 256) // 4 max pooling   P2
+                                                   :: ( 13,  13,  3,  3, 1, 1, 384) // 5 convolutional C3
+                                                   :: ( 13,  13,  3,  3, 1, 1, 384) // 6 convolutional C4
+                                                   :: ( 13,  13,  3,  3, 1, 1, 256) // 7 convolutional C5
+                                                   :: (  6,   6,  3,  3, 2, 0, 256) // 8 max pooling   P3
                                                    :: Nil
 
     given List[Int] = 9216/*=6*6*256*/ :: 512 :: 512 :: 10 :: 10 :: Nil
@@ -130,7 +130,7 @@ class AlexNetSuite extends FunSuite:
     print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
     an(data, batch, epochs) {
-      // case (count, done) if count % 5 == 0 && done % 5000 == 0 =>
+      // case (count, done) => if count % 1 == 0 && done % 1 == 0 =>
       //   print(s" Passing through $count epochs and $done images...")
       case _ =>
     }

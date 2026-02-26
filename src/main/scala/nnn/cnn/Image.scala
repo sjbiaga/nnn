@@ -46,10 +46,10 @@ case class Image[
   /**
     * unsafe padding
     */
-  def pad(padding: Int): Image[A, ?, ?, D] =
+  def pad(padding: Int): Image[A, L+2*padding.type, B+2*padding.type, D] =
     if padding == 0
     then
-      this
+      this.asInstanceOf[Image[A, L+2*padding.type, B+2*padding.type, D]]
     else
       type P = padding.type
       given ValueOf[P] = ValueOf(padding)

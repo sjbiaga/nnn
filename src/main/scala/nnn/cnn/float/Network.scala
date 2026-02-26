@@ -59,6 +59,7 @@ case class Network[
 
   require(K+1 == pattern.size)
   require(M == layers.size)
+  require(!layers(0).isInstanceOf[Pooling[?, ?, ?]])
   require(!layers(M-1).isInstanceOf[Dropout[?, ?]])
 
   val softmax_cross_entropy = layers(M-1).isInstanceOf[Softmax[?]]
@@ -204,6 +205,8 @@ case class Network[
         nabla ::= null
         NABLA ::= null
 
+    // VELOCITY
+
     if decayFactor > 0
     then
 
@@ -252,6 +255,7 @@ case class Network[
       do
         // FORWARD PASS
 
+        var PAD: List[FeatureMap[Float, ?, ?, ?]] = Nil
         var NET: List[FeatureMap[Float, ?, ?, ?]] = Nil
         var OUT: List[FeatureMap[Float, ?, ?, ?]] = List(input.image)
         var LRN: List[(Tensor[Float, ?, ?, ?], Image[Float, ?, ?, ?])] = List(null)
@@ -262,8 +266,9 @@ case class Network[
           given Boolean = pattern(given_Int)
           padding = volume(given_Int)._6
         do
-          val featureMapIn = OUT.head.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
-          val featureMapOut = {
+          val featureMapIn = OUT.head.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]].pad(padding)
+          PAD ::= featureMapIn
+          var featureMapOut = {
             if given_Boolean
             then // CONVOLUTION
               val kernels = layers(l).kernels[KL[given_Int.type], KB[given_Int.type], D[l.type]]
@@ -271,16 +276,17 @@ case class Network[
             else // POOLING
               val pooling = layers(l).pooling[PL[given_Int.type], PB[given_Int.type], PS[given_Int.type]]
               pooling(featureMapIn)
-          }.pad(padding).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
-          val featureMapOutʹ = featureMapOut --> layers(l).activation
+          }.asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
           NET ::= featureMapOut
-          OUT ::= featureMapOutʹ
+          featureMapOut = featureMapOut --> layers(l).activation
+          OUT ::= featureMapOut
           layers(l) match
             case lrn: ConvolutionalLRN[?, ?, ?, ?] =>
-              LRN ::= featureMapOutʹ.lrn(lrn.k, lrn.n, lrn.α, lrn.β)
+              LRN ::= featureMapOut.lrn(lrn.k, lrn.n, lrn.α, lrn.β)
             case _ =>
               LRN ::= null
 
+        PAD = PAD.reverse
         NET = NET.reverse
         OUT = OUT.reverse
         LRN = LRN.reverse
@@ -355,20 +361,13 @@ case class Network[
             delta = δʹ ⊙ prime(l)(net(l-1).asInstanceOf[Vector[Float, N[l.type]]])
           else
             given Int = K
-            val padding = volume(given_Int)._6
-            if padding == 0
-            then
-              DELTA = δʹ.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
-            else
-              type P = padding.type
-              given ValueOf[P] = ValueOf(padding)
-              DELTA = δʹ.reshape[FL[given_Int.type]].reshape[D[given_Int.type]].crop[P, P]
+            DELTA = δʹ.reshape[FL[given_Int.type]].reshape[D[given_Int.type]]
 
         for // CONVOLUTION|POOLING
           given Int <- maps.reverse
           l = given_Int-1
           given Boolean = pattern(given_Int)
-          padding = volume(l)._6
+          padding = volume(given_Int)._6
         do
           layers(l) match
             case lrn: ConvolutionalLRN[?, ?, ?, ?] =>
@@ -398,19 +397,20 @@ case class Network[
                   }.sum * a(i, j, c) * 2*α*β / n
               }.flatten*)
             case _ =>
-          val h = OUT(l).asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
           val a = NET(l).asInstanceOf[FeatureMap[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
           val δ = DELTA.asInstanceOf[Tensor[Float, FL[given_Int.type], FB[given_Int.type], D[given_Int.type]]]
                 ⊙ (a -->> layers(l).activation)
           if given_Boolean
           then // CONVOLUTION
+            type P = padding.type
+            val x = PAD(l).asInstanceOf[FeatureMap[Float, FL[given_Int.type]+2*P, FB[given_Int.type]+2*P, D[given_Int.type]]]
             val kernels = layers(l).kernels[KL[given_Int.type], KB[given_Int.type], D[l.type]]
             { for
                 d <- 0 until kernels(0).depth
               yield
-                h(d)
+                x(d)
             } match
-              case h =>
+              case x =>
                 val dδ = δ[KS[given_Int.type]].dilate
                 { for
                     k <- 0 until kernels.size
@@ -427,7 +427,7 @@ case class Network[
                         yield
                           type P = FL[given_Int.type] + (FL[given_Int.type] - 1) * (KS[given_Int.type] - 1)
                           type Q = FB[given_Int.type] + (FB[given_Int.type] - 1) * (KS[given_Int.type] - 1)
-                          h(d).⋆[P, Q](δ(k))
+                          x(d).⋆[P, Q](δ(k))
                       { val ∇ = NABLA(l)(k).asInstanceOf[Tensor[Float, KL[given_Int.type], KB[given_Int.type], D[l.type]]]
                         val ∂ = { given Int = l; Tensor[Float].stack(ms*)[D[given_Int.type]] }.asInstanceOf[Tensor[Float, KL[given_Int.type], KB[given_Int.type], D[l.type]]]
                         NABLA(l)(k) := ∇ + ∂
@@ -453,14 +453,19 @@ case class Network[
                       yield
                         δ(k).∗[KL[given_Int.type], KB[given_Int.type]](kernels(k)(d))
                     }.reduce(_ + _)
-                  if padding == 0
+                  DELTA = { given Int = l; Tensor[Float].stack(ms*)[D[given_Int.type]] }
+                  if padding > 0
                   then
-                    DELTA = { given Int = l; Tensor[Float].stack(ms*)[D[given_Int.type]] }
-                  else
                     type P = padding.type
                     given ValueOf[P] = ValueOf(padding)
-                    DELTA = { given Int = l; Tensor[Float].stack(ms*)[D[given_Int.type]] }.crop[P, P]
+                    DELTA = DELTA.crop[P, P]
           else // POOLING
+            val h =
+              if layers(l-1).isInstanceOf[ConvolutionalLRN[?, ?, ?, ?]]
+              then
+                LRN(l)._2.asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
+              else
+                OUT(l).asInstanceOf[FeatureMap[Float, FL[l.type], FB[l.type], D[l.type]]]
             type P = (FL[l.type] - PL[given_Int.type]) / PS[given_Int.type] + 1
             type Q = (FB[l.type] - PB[given_Int.type]) / PS[given_Int.type] + 1
             val pa = a.asInstanceOf[FeatureMap[Float, P, Q, D[l.type]]]
@@ -490,13 +495,12 @@ case class Network[
               case _ =>
             if l > 0
             then
-              if padding == 0
+              DELTA = pooling(h, pa, pδ)
+              if padding > 0
               then
-                DELTA = pooling(h, pa, pδ)
-              else
                 type P = padding.type
                 given ValueOf[P] = ValueOf(padding)
-                DELTA = pooling(h, pa, pδ).crop[P, P]
+                DELTA = DELTA.crop[P, P]
 
       if decayFactor > 0
       then // MOMENTUM GRADIENT DESCENT

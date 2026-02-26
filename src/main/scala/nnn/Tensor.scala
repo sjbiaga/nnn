@@ -88,6 +88,7 @@ case class Tensor[
     * binary operation
     */
   def op2[B, C: Ring: ClassTag](that: Tensor[B, M, N, O])(fun: (A, B) => C): Tensor[C, M, N, O] =
+    require(this.size == that.size)
     val result = Array.fill(rows, cols, depth)(Ring[C].zero)
     for
       i <- 0 until rows
