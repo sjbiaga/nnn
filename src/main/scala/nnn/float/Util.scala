@@ -32,9 +32,9 @@ object Util:
       case it: Double => it.toFloat
       case it: Float  => it
 
-  given Conversion[Float, Int] = _.toInt
-  given Conversion[Float, Long] = _.toLong
-  given Conversion[Float, Double] = _.toDouble
+  inline given Conversion[Float, Int] = _.toInt
+  inline given Conversion[Float, Long] = _.toLong
+  inline given Conversion[Float, Double] = _.toDouble
 
   extension [N <: Int: ValueOf](self: Vector[Float, N])
     def truncate(n: Int): Vector[Float, N] =

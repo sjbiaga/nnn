@@ -33,9 +33,9 @@ class NetworkSuite extends FunSuite:
 
     val data = Data[2](Input(Vector[Real][2](.05, .10)) -> Output(Vector[Real][2](.01, .99)))
 
-    val (epochs, error) = nn(data, 1, 10)
+    val (epochs, error) = nn.train(data, 1, 10)
 
     println(s"Training took #$epochs epochs and ended with error ${error.toDouble}")
-    println(nn(Input(Vector[Real][2](.05, .10))).answer.to[Double])
+    println(nn.test(Input(Vector[Real][2](.05, .10))).answer.to[Double])
 
   }

@@ -60,10 +60,7 @@ case class Network[
   def prime(l: Int, net: Vector[Real, N]): Vector[Real, N] =
     Vector[Real]((layers(l).neurons.map(_.activation) zip net.toSeq).map(_.prime(_))*)
 
-  /**
-    * train
-    */
-  def apply(data: Data[N], batch: Int, epochs: Int = Int.MaxValue, error: Option[Double] = None): (Int, Real) =
+  def train(data: Data[N], batch: Int, epochs: Int = Int.MaxValue, error: Option[Double] = None): (Int, Real) =
     require(epochs >= 0 && error.map(_ > 0).getOrElse(true) && (!error.isDefined || data.io.size == 1))
 
     var count = 0
@@ -142,12 +139,7 @@ case class Network[
 
     count -> total
 
-  /**
-    * predict
-    */
-  def apply(input: Input[N]): Output[N] =
-    val weights = this()
-
+  def test(input: Input[N], weights: List[Matrix[Real, N, N+1]] = this()): Output[N] =
     var out = input.data.++(1)
 
     for
@@ -181,13 +173,11 @@ object Network:
 
     def xavier[I <: Int: ValueOf,
                O <: Int: ValueOf](activation: Activation): Seq[Neuron[I]] =
-      val initialization = Xavier(valueOf[I], valueOf[O])
-      (1 to valueOf[O]).map(_ => Neuron(Vector[Real][I](initialization), initialization(), activation))
+      this[I, O](Xavier(valueOf[I], valueOf[O]), activation)
 
     def kaiming[I <: Int: ValueOf,
                 O <: Int: ValueOf](activation: Activation = Activation.ReLU): Seq[Neuron[I]] =
-      val initialization = Kaiming(valueOf[I])
-      (1 to valueOf[O]).map(_ => Neuron(Vector[Real][I](initialization), initialization(), activation))
+      this[I, O](Kaiming(valueOf[I]), activation)
 
   case class Layer[N <: Int: ValueOf](neurons: Neuron[N]*):
     require(valueOf[N] == neurons.size)

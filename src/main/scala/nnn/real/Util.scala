@@ -23,10 +23,10 @@ object Util:
       case it: Double => Real(it)
       case it: Real   => it
 
-  given Conversion[Real, Int] = _.toInt
-  given Conversion[Real, Long] = _.toLong
-  given Conversion[Real, Float] = _.toFloat
-  given Conversion[Real, Double] = _.toDouble
+  inline given Conversion[Real, Int] = _.toInt
+  inline given Conversion[Real, Long] = _.toLong
+  inline given Conversion[Real, Float] = _.toFloat
+  inline given Conversion[Real, Double] = _.toDouble
 
   object softmax:
 

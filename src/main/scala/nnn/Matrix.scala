@@ -18,8 +18,14 @@ case class Matrix[
   N <: Int
 ](underlying: Array[Array[A]]) { self =>
 
+  def shaped[M[_ <: Int] <: Int,
+             N[_ <: Int] <: Int](using l: Int): Matrix[A, M[l.type], N[l.type]] =
+    this.asInstanceOf[Matrix[A, M[l.type], N[l.type]]]
+  def shaped[M <: Int, N <: Int]: Matrix[A, M, N] =
+    this.asInstanceOf[Matrix[A, M, N]]
+
   override def equals(any: Any): Boolean = any match
-    case that: Matrix[?, ?, ?] if this.rows == that.rows && this.cols == that.cols =>
+    case that: Matrix[?, ?, ?] if this.shape == that.shape =>
       var b = true
       for
         i <- 0 until rows
@@ -34,7 +40,7 @@ case class Matrix[
   val cols = underlying(0).size
   val size = rows * cols
 
-  val shape = (rows, cols)
+  val shape: (M, N) = (rows.asInstanceOf[M], cols.asInstanceOf[N])
 
   def apply(i: Int): Vector[A, N] =
     require(0 <= i && i < rows)
@@ -76,6 +82,7 @@ case class Matrix[
     * binary operation
     */
   def op2[B, C: Ring: ClassTag](that: Matrix[B, M, N])(fun: (A, B) => C): Matrix[C, M, N] =
+    require(this.shape == that.shape)
     val result = Array.fill(rows, cols)(Ring[C].zero)
     for
       i <- 0 until rows

@@ -19,8 +19,20 @@ case class Tensor[
   O <: Int
 ](underlying: Array[Array[Array[A]]]) { self =>
 
+  def shaped[M[_ <: Int] <: Int,
+             N[_ <: Int] <: Int](using l: Int) = PartiallyAppliedShaped[M[l.type], N[l.type]]
+  final class PartiallyAppliedShaped[M <: Int, N <: Int]:
+    def apply[O <: Int]: Tensor[A, M, N, O] =
+      self.asInstanceOf[Tensor[A, M, N, O]]
+  def shaped[M[_ <: Int] <: Int,
+             N[_ <: Int] <: Int,
+             O[_ <: Int] <: Int](using l: Int): Tensor[A, M[l.type], N[l.type], O[l.type]] =
+    this.asInstanceOf[Tensor[A, M[l.type], N[l.type], O[l.type]]]
+  def shaped[M <: Int, N <: Int, O <: Int]: Tensor[A, M, N, O] =
+    this.asInstanceOf[Tensor[A, M, N, O]]
+
   override def equals(any: Any): Boolean = any match
-    case that: Tensor[?, ?, ?, ?] if this.rows == that.rows && this.cols == that.cols =>
+    case that: Tensor[?, ?, ?, ?] if this.shape == that.shape =>
       var b = true
       for
         h <- 0 until depth
@@ -37,7 +49,7 @@ case class Tensor[
   val depth = underlying(0)(0).size
   val size = rows * cols * depth
 
-  val shape = (rows, cols, depth)
+  val shape: (M, N, O) = (rows.asInstanceOf[M], cols.asInstanceOf[N], depth.asInstanceOf[O])
 
   def apply(k: Int): Matrix[A, M, N] =
     require(0 <= k && k < depth)
@@ -90,7 +102,7 @@ case class Tensor[
     * binary operation
     */
   def op2[B, C: Ring: ClassTag](that: Tensor[B, M, N, O])(fun: (A, B) => C): Tensor[C, M, N, O] =
-    require(this.size == that.size)
+    require(this.shape == that.shape)
     val result = Array.fill(rows, cols, depth)(Ring[C].zero)
     for
       i <- 0 until rows

@@ -18,8 +18,13 @@ case class Vector[
   N <: Int
 ](underlying: Array[A]):
 
+  def shaped[N[_ <: Int] <: Int](using l: Int): Vector[A, N[l.type]] =
+    this.asInstanceOf[Vector[A, N[l.type]]]
+  def shaped[N <: Int]: Vector[A, N] =
+    this.asInstanceOf[Vector[A, N]]
+
   override def equals(any: Any): Boolean = any match
-    case that: Vector[?, ?] if this.rows == that.rows =>
+    case that: Vector[?, ?] if this.shape == that.shape =>
       var b = true
       for
         k <- 0 until rows
@@ -33,7 +38,7 @@ case class Vector[
   val cols = size
   val rows = size
 
-  val shape = Tuple1(rows)
+  val shape: Tuple1[N] = Tuple1(rows.asInstanceOf[N])
 
   def apply(i: Int): A =
     require(0 <= i && i < rows)
@@ -59,6 +64,7 @@ case class Vector[
     * binary operation
     */
   def op2[B, C: Ring: ClassTag](that: Vector[B, N])(fun: (A, B) => C): Vector[C, N] =
+    require(this.shape == that.shape)
     val result = Array.fill(rows)(Ring[C].zero)
     for
       k <- 0 until rows

@@ -9,6 +9,7 @@ import spire.algebra.{ Field, Ring }
 import spire.implicits.*
 
 import Image.*
+import Volume.{ *, given }
 
 
 enum Pooling[
@@ -60,7 +61,7 @@ enum Pooling[
   /**
     * gradient distribution
     *
-    * @param h input feature map (forward pass)
+    * @param s input feature map shape (forward pass)
     * @param a output feature map (forward pass)
     * @param δ input gradient (backpropagation)
     * @return output gradient (backpropagation)
@@ -69,11 +70,11 @@ enum Pooling[
     M <: Int,
     N <: Int,
     O <: Int
-  ](shape: (Int, Int, Int),
+  ](s: (M, N, O),
     a: FeatureMap[A, (M-P)/S+1, (N-Q)/S+1, O],
     δ: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]
   ): Tensor[A, M, N, O] =
-    val (length, breadth, depth) = shape
+    val (length, breadth, depth) = s
     val result = Array.fill(length, breadth, depth)(Ring[A].zero)
     for
       d <- 0 until depth
@@ -90,9 +91,10 @@ enum Pooling[
           do
             result(i+k)(j+l)(d) += δ(iʹ, jʹ, d)
         case max(_) =>
-          val max = a.volume.asInstanceOf[MaxPoolingVolume[A, (M-P)/S+1, (N-Q)/S+1, O, P, Q, S]].max
-          val (k, l) = max(iʹ, jʹ, d)
-          result(k)(l)(d) += δ(iʹ, jʹ, d)
+          a.volume match
+            case MaxPoolingVolume(max, _) =>
+              val (k, l) = max(iʹ, jʹ, d)
+              result(k)(l)(d) += δ(iʹ, jʹ, d)
     Image[A, M, N, O](null, Tensor[A, M, N, O](result))
 
 

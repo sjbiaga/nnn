@@ -27,6 +27,21 @@ class LeNetSuite extends FunSuite:
 
     // TYPE CHECKING
 
+    def imageOf(using fl: ValueOf[FL[0]], fb: ValueOf[FL[0]], d: ValueOf[D[0]]): (Int, Int, Int, Int, Int, Int, Int) =
+      (fl.value, fb.value, 0, 0, 0, 0, d.value)
+
+    def kernelsOf[C <: Int](using fl: ValueOf[FL[C]], fb: ValueOf[FL[C]],
+                                  kl: ValueOf[KL[C]], kb: ValueOf[KB[C]], ks: ValueOf[KS[C]],
+                                  d: ValueOf[D[C]]): (Int, Int, Int, Int, Int, Int, Int) =
+      (fl.value, fb.value, kl.value, kb.value, ks.value, 0, d.value)
+
+    def poolingOf[C <: Int](using fl: ValueOf[FL[C]], fb: ValueOf[FL[C]],
+                                  pl: ValueOf[PL[C]], pb: ValueOf[PB[C]], ps: ValueOf[PS[C]],
+                                  d: ValueOf[D[C]]): (Int, Int, Int, Int, Int, Int, Int) =
+      (fl.value, fb.value, pl.value, pb.value, ps.value, 0, d.value)
+
+    def shapeOf[L <: Int](using n: ValueOf[N[L]]): Int = n.value
+
     def C[C <: Int: ValueOf, O <: Int: ValueOf](layer: Layer.Convolutional[?, ?, ?, O])
                                                (using flp: ValueOf[FL[C-1]], fbp: ValueOf[FB[C-1]],
                                                       fl: ValueOf[FL[C]], fb: ValueOf[FL[C]],
@@ -75,29 +90,29 @@ class LeNetSuite extends FunSuite:
 
     given List[Boolean] = false :: true :: false :: true :: false :: Nil
 
-    // true     FL   FB   KL   KB   KS   pad  D
-    // false    FL   FB   PL   PB   PS   pad  D
-    given List[(Int, Int, Int, Int, Int, Int, Int)] = (32, 32, 0, 0, 0, 0,  1) // image
-                                                   :: (28, 28, 5, 5, 1, 0,  6) // convolutional
-                                                   :: (14, 14, 2, 2, 2, 0,  6) // subsampling
-                                                   :: (10, 10, 5, 5, 1, 0, 16) // convolutional
-                                                   :: ( 5,  5, 2, 2, 2, 0, 16) // subsampling
+    // true     FL   FB   KL   KB   KS   0    D
+    // false    FL   FB   PL   PB   PS   0    D
+    given List[(Int, Int, Int, Int, Int, Int, Int)] = imageOf
+                                                   :: kernelsOf[1] // convolutional
+                                                   :: poolingOf[2] // subsampling
+                                                   :: kernelsOf[3] // convolutional
+                                                   :: poolingOf[4] // subsampling
                                                    :: Nil
 
-    given List[Int] = 400/*=5*5*16*/ :: 120 :: 84 :: 10 :: 10 :: Nil
+    given List[Int] = shapeOf[4] :: shapeOf[5] :: shapeOf[6] :: shapeOf[7] :: shapeOf[8] :: Nil
 
     print("Initializing LeNet CNN...")
 
     // val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
     //   loss = CCE[10](),
     //   (0.01, 0, 0),
-    //   C[1, 6](Layer.Convolutional[5, 5, 1, 6](LeakyReLU(), Kernel[Float, 5, 5, 1](glorot[5, 5, 1, 6])[6]*)),
+    //   C[1, 6](Layer.Convolutional[5, 5, 1, 6](Sigmoid, Kernel[Float, 5, 5, 1](glorot[5, 5, 1, 6])[6]*)),
     //   P[2](Layer.Pooling[2, 2, 2](subsampling[Float, 2, 2, 2, 6](null), LeCunnTanh)),
-    //   C[3, 16](Layer.Convolutional[5, 5, 6, 16](LeakyReLU(), Kernel[Float, 5, 5, 6](glorot[5, 5, 6, 16])[16]*)),
+    //   C[3, 16](Layer.Convolutional[5, 5, 6, 16](Sigmoid, Kernel[Float, 5, 5, 6](glorot[5, 5, 6, 16])[16]*)),
     //   P[4](Layer.Pooling[2, 2, 2](subsampling[Float, 2, 2, 2, 16](null), LeCunnTanh)),
-    //   D[5](Layer.Dense[400, 120](Neuron.xavier[400, 120](LeakyReLU())*)),
-    //   D[6](Layer.Dense[120, 84](Neuron.xavier[120, 84](LeakyReLU())*)),
-    //   D[7](Layer.Dense[84, 10](Neuron.xavier[84, 10](LeakyReLU())*)),
+    //   D[5](Layer.Dense[400, 120](Neuron.xavier[400, 120](Sigmoid)*)),
+    //   D[6](Layer.Dense[120, 84](Neuron.xavier[120, 84](Sigmoid)*)),
+    //   D[7](Layer.Dense[84, 10](Neuron.xavier[84, 10](Sigmoid)*)),
     //   D[8](Layer.Softmax[10](Xavier(10, 10)))
     // )
 
@@ -133,13 +148,15 @@ class LeNetSuite extends FunSuite:
 
     print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
-    ln(data, batch, epochs) {
+    ln.train(data, batch, epochs) {
       case (count, done) if count % 5 == 0 && done % 5000 == 0 =>
         print(s" Passing through $count epochs and $done images...")
       case _ =>
     }
 
     println(" done.")
+
+    val weights = ln()
 
     val read = 1010 // 10000
     val test = 10 // 10000
@@ -152,7 +169,7 @@ class LeNetSuite extends FunSuite:
 
     for
       case image @ Image(label: Int, _) <- rnd.shuffle(testMNIST("./data/MNIST", drop+test, false).drop(drop))
-      Output(answer) = ln(Input(image))
+      Output(answer) = ln.test(Input(image), weights)
       if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
     do
       correct += 1

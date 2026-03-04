@@ -33,11 +33,11 @@ class NetworkSuite extends FunSuite:
 
     val data = Data[2](Input(Vector[Double][2](.05, .10)) -> Output(Vector[Double][2](.01, .99)))
 
-    val (epochs, error) = nn(data, 1, 10000)
+    val (epochs, error) = nn.train(data, 1, 10000)
 
     assert(epochs == 10000 && error < 1E-5)
 
-    val answer = nn(Input(Vector[Double][2](.05, .10))).answer
+    val answer = nn.test(Input(Vector[Double][2](.05, .10))).answer
 
     assertEquals(answer.truncate(2), Vector[Double][2](.01, .98))
 
@@ -58,12 +58,14 @@ class NetworkSuite extends FunSuite:
                         Input(Vector[Double][10](1, 1, 0, 0, 0, 0, 0, 0, 0, 0)) -> Output(Vector[Double][10](0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
     )
 
-    xor(data, 1, 10000)
+    xor.train(data, 1, 10000)
 
-    val answer00 = xor(Input(Vector[Double][10](0, 0, 0, 0, 0, 0, 0, 0, 0, 0))).answer
-    val answer01 = xor(Input(Vector[Double][10](0, 1, 0, 0, 0, 0, 0, 0, 0, 0))).answer
-    val answer10 = xor(Input(Vector[Double][10](1, 0, 0, 0, 0, 0, 0, 0, 0, 0))).answer
-    val answer11 = xor(Input(Vector[Double][10](1, 1, 0, 0, 0, 0, 0, 0, 0, 0))).answer
+    val weights = xor()
+
+    val answer00 = xor.test(Input(Vector[Double][10](0, 0, 0, 0, 0, 0, 0, 0, 0, 0)), weights).answer
+    val answer01 = xor.test(Input(Vector[Double][10](0, 1, 0, 0, 0, 0, 0, 0, 0, 0)), weights).answer
+    val answer10 = xor.test(Input(Vector[Double][10](1, 0, 0, 0, 0, 0, 0, 0, 0, 0)), weights).answer
+    val answer11 = xor.test(Input(Vector[Double][10](1, 1, 0, 0, 0, 0, 0, 0, 0, 0)), weights).answer
 
     assertEquals(answer00.truncate(1)(0), .0d)
     assertEquals(answer01.truncate(1)(0), .9d)

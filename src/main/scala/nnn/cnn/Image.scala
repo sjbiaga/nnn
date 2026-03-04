@@ -10,6 +10,7 @@ import spire.algebra.{ Field, Ring }
 import spire.implicits.{ pow => _, * }
 
 import Image.*
+import Volume.{ *, given }
 
 
 case class Image[
@@ -17,7 +18,20 @@ case class Image[
   L <: Int,
   B <: Int,
   D <: Int
-](var label: Any, volume: Volume[A, L, B, D]) { self =>
+](label: Any, volume: Volume[A, L, B, D]) { self =>
+
+  def shaped[P <: Int] = PartiallyAppliedShapedPadded[P]
+  final class PartiallyAppliedShapedPadded[P <: Int]:
+    def apply[M[_ <: Int] <: Int,
+              N[_ <: Int] <: Int,
+              O[_ <: Int] <: Int](using l: Int): Tensor[A, M[l.type]+2*P, N[l.type]+2*P, O[l.type]] =
+      self.asInstanceOf[Image[A, M[l.type]+2*P, N[l.type]+2*P, O[l.type]]]
+  def shaped[M[_ <: Int] <: Int,
+             N[_ <: Int] <: Int,
+             O[_ <: Int] <: Int](using l: Int): Image[A, M[l.type], N[l.type], O[l.type]] =
+    this.asInstanceOf[Image[A, M[l.type], N[l.type], O[l.type]]]
+  def shaped[M <: Int, N <: Int, O <: Int]: Image[A, M, N, O] =
+    this.asInstanceOf[Image[A, M, N, O]]
 
   val length = volume.data.rows
   val breadth = volume.data.cols
@@ -60,7 +74,7 @@ case class Image[
   /**
     * local response normalization
     */
-  def lrn(k: Double, n: Int, α: Double, β: Double)
+  def lrn(k: A, n: Int, α: A, β: A)(sum: Boolean = true)
          (using Conversion[A, Double], Conversion[Double, A])
          (using Field[A], Numeric[A]): (Tensor[A, L, B, D], Image[A, L, B, D]) =
                                     //  ^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^
@@ -89,7 +103,7 @@ case class Image[
     given ValueOf[L] = ValueOf(length.asInstanceOf[L])
     given ValueOf[B] = ValueOf(breadth.asInstanceOf[B])
     given ValueOf[D] = ValueOf(depth.asInstanceOf[D])
-    Tensor[A][L, B, D](ps.map(_._1)*) -> Image[A, L, B, D](label, Tensor[A][L, B, D](ps.map(_._2)*))
+    (if sum then Tensor[A][L, B, D](ps.map(_._1)*) else null) -> Image[A, L, B, D](label, Tensor[A][L, B, D](ps.map(_._2)*))
 
   /**
     * flatten
@@ -105,72 +119,84 @@ object Image:
   /**
     * alias for [[Tensor]] but subclasses cache extra data
     */
-  case class Volume[
+  sealed abstract class Volume[
     A: Ring: ClassTag,
     L <: Int,
     B <: Int,
     D <: Int
-  ](data: Tensor[A, L, B, D])
+  ]:
+    val data: Tensor[A, L, B, D]
 
-  class SubsamplingVolume[
-    A: Ring: ClassTag,
-    M <: Int,
-    N <: Int,
-    O <: Int,
-    P <: Int,
-    Q <: Int,
-    S <: Int
-  ](val avg: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O],
-    data: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]
-  ) extends Volume(data)
+  object Volume:
 
-  class MaxPoolingVolume[
-    A: Ring: ClassTag,
-    M <: Int,
-    N <: Int,
-    O <: Int,
-    P <: Int,
-    Q <: Int,
-    S <: Int
-  ](val max: Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O],
-    data: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]
-  ) extends Volume(data)
+    def apply[
+      A: Ring: ClassTag,
+      L <: Int,
+      B <: Int,
+      D <: Int
+    ](tensor: Tensor[A, L, B, D]) =
+      new Volume[A, L, B, D]:
+        override val data: Tensor[A, L, B, D] = tensor
 
-  given [
-    A: Ring: ClassTag,
-    M <: Int,
-    N <: Int,
-    O <: Int
-  ]: Conversion[Tensor[A, M, N, O], Volume[A, M, N, O]] = Volume.apply
+    case class SubsamplingVolume[
+      A: Ring: ClassTag,
+      M <: Int,
+      N <: Int,
+      O <: Int,
+      P <: Int,
+      Q <: Int,
+      S <: Int
+    ](avg: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O],
+      data: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]
+    ) extends Volume[A, (M-P)/S+1, (N-Q)/S+1, O]
 
-  given [
-    A: Ring: ClassTag,
-    M <: Int,
-    N <: Int,
-    O <: Int
-  ]: Conversion[Image[A, M, N, O], Tensor[A, M, N, O]] = _.volume.data
+    case class MaxPoolingVolume[
+      A: Ring: ClassTag,
+      M <: Int,
+      N <: Int,
+      O <: Int,
+      P <: Int,
+      Q <: Int,
+      S <: Int
+    ](max: Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O],
+      data: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]
+    ) extends Volume[A, (M-P)/S+1, (N-Q)/S+1, O]
 
-  given [
-    A: Ring: ClassTag,
-    M <: Int,
-    N <: Int,
-    O <: Int,
-    P <: Int,
-    Q <: Int,
-    S <: Int
-  ]: Conversion[(Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O], Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]), Volume[A, (M-P)/S+1, (N-Q)/S+1, O]] with
-    def apply(self: (Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O], Tensor[A, (M-P)/S+1, (N-Q)/S+1, O])): Volume[A, (M-P)/S+1, (N-Q)/S+1, O] =
-      MaxPoolingVolume[A, M, N, O, P, Q, S](self._1, self._2)
+    given [
+      A: Ring: ClassTag,
+      M <: Int,
+      N <: Int,
+      O <: Int
+    ]: Conversion[Tensor[A, M, N, O], Volume[A, M, N, O]] = Volume.apply
 
-  given [
-    A: Ring: ClassTag,
-    M <: Int,
-    N <: Int,
-    O <: Int,
-    P <: Int,
-    Q <: Int,
-    S <: Int
-  ](using avg: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]): Conversion[Tensor[A, (M-P)/S+1, (N-Q)/S+1, O], Volume[A, (M-P)/S+1, (N-Q)/S+1, O]] = SubsamplingVolume[A, M, N, O, P, Q, S](avg, _)
+    given [
+      A: Ring: ClassTag,
+      M <: Int,
+      N <: Int,
+      O <: Int
+    ]: Conversion[Image[A, M, N, O], Tensor[A, M, N, O]] = _.volume.data
+
+    given [
+      A: Ring: ClassTag,
+      M <: Int,
+      N <: Int,
+      O <: Int,
+      P <: Int,
+      Q <: Int,
+      S <: Int
+    ]: Conversion[(Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O], Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]), Volume[A, (M-P)/S+1, (N-Q)/S+1, O]] with
+      def apply(self: (Tensor[(Int, Int), (M-P)/S+1, (N-Q)/S+1, O], Tensor[A, (M-P)/S+1, (N-Q)/S+1, O])): Volume[A, (M-P)/S+1, (N-Q)/S+1, O] =
+        MaxPoolingVolume[A, M, N, O, P, Q, S](self._1, self._2)
+
+    given [
+      A: Ring: ClassTag,
+      M <: Int,
+      N <: Int,
+      O <: Int,
+      P <: Int,
+      Q <: Int,
+      S <: Int
+    ](using avg: Tensor[A, (M-P)/S+1, (N-Q)/S+1, O]): Conversion[Tensor[A, (M-P)/S+1, (N-Q)/S+1, O], Volume[A, (M-P)/S+1, (N-Q)/S+1, O]] = SubsamplingVolume[A, M, N, O, P, Q, S](avg, _)
 
   type FeatureMap = Image
 

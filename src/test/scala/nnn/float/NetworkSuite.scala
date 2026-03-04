@@ -30,7 +30,7 @@ class NetworkSuite extends FunSuite:
 
     val nn = Network[N, 2](
       loss = MSE[2](),
-      learningRate = 0.5,
+      (0.5, 0, 0),
       D[1] {
         Layer[2, 2](
           Neuron(Vector[Float](.15, .20), .35, Sigmoid),
@@ -49,11 +49,11 @@ class NetworkSuite extends FunSuite:
 
     val data = Data[2, 2](Input(Vector[Float][2](.05, .10)) -> Output(Vector[Float][2](.01, .99)))
 
-    val (epochs, error) = nn(data, 1, 10000)
+    val (epochs, error) = nn.train(data, 1, 10000)
 
     assert(epochs == 10000 && error < 1E-5)
 
-    val answer = nn(Input[2](Vector[Float](.05, .10))).answer
+    val answer = nn.test(Input[2](Vector[Float](.05, .10))).answer
 
     assertEquals(answer.truncate(2), Vector[Float][2](.01, .98))
 
@@ -73,7 +73,7 @@ class NetworkSuite extends FunSuite:
 
     val xor = Network[N, 2](
       loss = MSE[1](),
-      learningRate = 3,
+      (3, 0, 0),
       D[1](Layer[2, 10](Neuron[2, 10](Gaussian(), Sigmoid)*)),
       D[2](Layer[10, 1](Neuron[10, 1](Gaussian(), Sigmoid)*))
     )
@@ -84,12 +84,14 @@ class NetworkSuite extends FunSuite:
                           Input(Vector[Float][2](1, 1)) -> Output(Vector[Float][1](0)),
     )
 
-    xor(data, 1, 10000)
+    xor.train(data, 1, 10000)
 
-    val answer00 = xor(Input(Vector[Float][2](0, 0))).answer
-    val answer01 = xor(Input(Vector[Float][2](0, 1))).answer
-    val answer10 = xor(Input(Vector[Float][2](1, 0))).answer
-    val answer11 = xor(Input(Vector[Float][2](1, 1))).answer
+    val weights = xor()
+
+    val answer00 = xor.test(Input(Vector[Float][2](0, 0)), weights).answer
+    val answer01 = xor.test(Input(Vector[Float][2](0, 1)), weights).answer
+    val answer10 = xor.test(Input(Vector[Float][2](1, 0)), weights).answer
+    val answer11 = xor.test(Input(Vector[Float][2](1, 1)), weights).answer
 
     assertEquals(answer00.truncate(2)(0), .00f)
     assertEquals(answer01.truncate(2)(0), .99f)
