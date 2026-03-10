@@ -89,8 +89,6 @@ class AlexNetSuite extends FunSuite:
 
     type N[L <: Int] = L match { case 8 => FL[8]*FB[8]*D[8] case 9 | 10 => 4096 case 11 | 12 => 10 }
 
-    given List[Boolean] = false :: true :: false :: true :: false :: true :: true :: true :: false :: Nil
-
     // true     FL   FB   KL   KB   KS   P    D
     // false    FL   FB   PL   PB   PS   P    D
     given List[(Int, Int, Int, Int, Int, Int, Int)] = imageOf
@@ -121,24 +119,26 @@ class AlexNetSuite extends FunSuite:
       P[8](Layer.Pooling[3, 3, 2](max[Float, 3, 3, 2](Float.MinValue))),                                                    // P3
       D[9](Layer.Dropout[9216, 4096](0.5, Neuron.bias(1f)[9216, 4096](gaussian, ReLU)*)),
       D[10](Layer.Dropout[4096, 4096](0.5, Neuron.bias(1f)[4096, 4096](gaussian, ReLU)*)),
-      D[11](Layer.Dense[4096, 10](Neuron.bias(1f)[4096, 10](gaussian, ReLU)*)),
-      D[12](Layer.Softmax[10](gaussian))
+      D[11](Layer.Dense[4096, 10](Neuron.bias(1f)[4096, 10](gaussian, Linear())*)),
+      D[12](Layer.Softmax[10](gaussian, 1f))
     )
 
-    println(" done.")
-
     val data = Data[227, 227, 3, 10]({
-      val read = 1 // 10000
+      val read = 0 // 10000
       val train = 0 // 10000
 
       val drop = rnd.nextInt(read-train+1)
       val batch = 1+rnd.nextInt(5)
+
+      print(s" Reading $read images from batch $batch...")
 
       for
         case image @ Image(label: Int, _) <- rnd.shuffle(trainCIFAR10("./data/cifar-10-batches-bin", batch, drop+train, true).drop(drop))
       yield
         Input(image) -> OneHotOutput(label)
     }*)
+
+    println(" done.")
 
     val batch = 1 // 128
     val epochs = 1 // 90
@@ -155,7 +155,7 @@ class AlexNetSuite extends FunSuite:
 
     val weights = an()
 
-    val read = 1 // 10000
+    val read = 0 // 10000
     val test = 0 // 10000
 
     val drop = rnd.nextInt(read-test+1)
@@ -165,7 +165,7 @@ class AlexNetSuite extends FunSuite:
     var correct = 0
 
     for
-      case image @ Image(label: Int, _) <- rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", drop+test, false).drop(drop))
+      case image @ Image(label: Int, _) <- rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", drop+test, true).drop(drop))
       Output(answer) = an.test(Input(image), weights)
       if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
     do
@@ -231,7 +231,7 @@ object AlexNetSuite:
         import java.awt.image.BufferedImage
 
         val b = Array.fill(3073)(0.toByte)
-        binInputStream.read(b)
+        assert(binInputStream.read(b) == 3073)
 
         val image = new BufferedImage(32, 32, BufferedImage.TYPE_INT_RGB)
 

@@ -21,7 +21,7 @@ import AlexNet10Suite.*
 
 class AlexNet10Suite extends FunSuite:
 
-  override val munitTimeout = 7.days
+  //override val munitTimeout = 7.days
 
   test("CNN:CIFAR-10 https://en.wikipedia.org/wiki/AlexNet#/media/File:AlexNet_block_diagram.svg") {
 
@@ -89,8 +89,6 @@ class AlexNet10Suite extends FunSuite:
 
     type N[L <: Int] = L match { case 8 => FL[8]*FB[8]*D[8] case 9 | 10 => 512 case 11 | 12 => 10 }
 
-    given List[Boolean] = false :: true :: false :: true :: false :: true :: true :: true :: false :: Nil
-
     // true     FL   FB   KL   KB   KS   P    D
     // false    FL   FB   PL   PB   PS   P    D
     given List[(Int, Int, Int, Int, Int, Int, Int)] = imageOf
@@ -106,11 +104,11 @@ class AlexNet10Suite extends FunSuite:
 
     given List[Int] = shapeOf[8] :: shapeOf[9] :: shapeOf[10] :: shapeOf[11] :: shapeOf[12] :: Nil
 
-    print("Initializing AlexNet CNN...")
+    print("Initializing CIFAR-10 AlexNet CNN...")
 
     val an = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 8, N, 12](
       loss = CCE[10](),
-      (0.01, 0.9, 0.0005),
+      (0.001, 0.5, 0.001),
       C[1, 96](Layer.ConvolutionalLRN[3, 3, 3, 96](2, 5, 1E-4, 0.75, ReLU, Kernel.bias(0f)[3, 3, 3](gaussian)[96]*)),       // C1
       P[2](Layer.Pooling[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue))),                                                    // P1
       C[3, 256](Layer.ConvolutionalLRN[3, 3, 96, 256](2, 5, 1E-4, 0.75, ReLU, Kernel.bias(1f)[3, 3, 96](gaussian)[256]*)),  // C2
@@ -121,32 +119,40 @@ class AlexNet10Suite extends FunSuite:
       P[8](Layer.Pooling[2, 2, 2](max[Float, 2, 2, 2](Float.MinValue))),                                                    // P3
       D[9](Layer.Dropout[4096, 512](0.5, Neuron.bias(1f)[4096, 512](gaussian, ReLU)*)),
       D[10](Layer.Dropout[512, 512](0.5, Neuron.bias(1f)[512, 512](gaussian, ReLU)*)),
-      D[11](Layer.Dense[512, 10](Neuron.bias(1f)[512, 10](gaussian, ReLU)*)),
-      D[12](Layer.Softmax[10](gaussian))
+      D[11](Layer.Dense[512, 10](Neuron.bias(1f)[512, 10](gaussian, Linear())*)),
+      D[12](Layer.Softmax[10](gaussian, 1f))
     )
 
-    println(" done.")
+    val label = rnd.nextInt(10)
+
+    val batch = 1 // 128
 
     val data = Data[32, 32, 3, 10]({
-      val read = 1 // 10000
+      val read = 0 // 10000
       val train = 0 // 10000
 
       val drop = rnd.nextInt(read-train+1)
-      val batch = 1+rnd.nextInt(5)
+
+      val trainData = rnd.shuffle(trainCIFAR10("./data/cifar-10-batches-bin", label, drop+train, true).drop(drop))
+
+      val size = (trainData.size / batch) * batch
+
+      print(s" Reading $size images labelled '${labels(label)}'...")
 
       for
-        case image @ Image(label: Int, _) <- rnd.shuffle(trainCIFAR10("./data/cifar-10-batches-bin", batch, drop+train, true).drop(drop))
+        case image @ Image(label: Int, _) <- trainData.drop(trainData.size - size)
       yield
         Input(image) -> OneHotOutput(label)
     }*)
 
-    val batch = 1 // 128
-    val epochs = 1 // 90
+    println(" done.")
+
+    val epochs = 0 // 90
 
     print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
     an.train(data, batch, epochs) {
-      case (count, done) if count % 1 == 0 && done % 32 == 0 =>
+      case (count, done) if count % 1 == 0 && done % 128 == 0 =>
         print(s" Passing through $count epochs and $done images...")
       case _ =>
     }
@@ -155,17 +161,21 @@ class AlexNet10Suite extends FunSuite:
 
     val weights = an()
 
-    val read = 1 // 10000
+    val read = 0 // 10000
     val test = 0 // 10000
 
     val drop = rnd.nextInt(read-test+1)
 
-    print(s"Testing $test images...")
+    val testData = rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", label, drop+test, true).drop(drop))
+
+    val size = testData.size
+
+    print(s"Testing $size images labelled '${labels(label)}'...")
 
     var correct = 0
 
     for
-      case image @ Image(label: Int, _) <- rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", drop+test, false).drop(drop))
+      case image @ Image(label: Int, _) <- testData
       Output(answer) = an.test(Input(image), weights)
       if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
     do
@@ -173,7 +183,7 @@ class AlexNet10Suite extends FunSuite:
 
     println(" done.")
 
-    val accuracy = ((1f * correct / test) * 100).toInt
+    val accuracy = ((1f * correct / size) * 100).toInt
 
     //assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
   }
@@ -199,13 +209,26 @@ object AlexNet10Suite:
                     "ship",
                     "truck")
 
-  def trainCIFAR10(path: String, batch: Int, size: Int = 10000, zero: Boolean = true): Seq[Image[Float, 32, 32, 3]] =
-    CIFAR10(path, s"data_batch_$batch", size, zero)
+  def trainCIFAR10(path: String, label: Int, size: Int, zero: Boolean = true): Seq[Image[Float, 32, 32, 3]] =
+    var sum = 0
+    ( for
+        batch <- rnd.shuffle(1 to 5)
+        if sum < size
+      yield
+        val seq = CIFAR10(path, s"data_batch_$batch", label, size - sum, zero)
+        sum += seq.size
+        seq
+    ).flatten
 
-  def testCIFAR10(path: String, size: Int = Int.MaxValue, zero: Boolean = true): Seq[Image[Float, 32, 32, 3]] =
-    CIFAR10(path, "test_batch", size, zero)
+  def testCIFAR10(path: String, label: Int, size: Int = Int.MaxValue, zero: Boolean = true): Seq[Image[Float, 32, 32, 3]] =
+    CIFAR10(path, "test_batch", label, size, zero)
 
-  def CIFAR10(path: String, name: String, size: Int, zero: Boolean): Seq[Image[Float, 32, 32, 3]] =
+  def CIFAR10(path: String, name: String, label: Int, size: Int, zero: Boolean): Seq[Image[Float, 32, 32, 3]] =
+    CIFAR10(path, name, zero)
+      .filter(_.label == label)
+      .take(size)
+
+  def CIFAR10(path: String, name: String, zero: Boolean): Seq[Image[Float, 32, 32, 3]] =
 
     val binFileName = s"$name.bin"
 
@@ -222,12 +245,12 @@ object AlexNet10Suite:
     try
 
       for
-        _ <- 0 until (size min 10000)
+        _ <- 0 until 10000
       yield
         // https://gist.github.com/sugyan/fa8391fb2b2da68ee981a5962d58e834
 
         val b = Array.fill(3073)(0.toByte)
-        binInputStream.read(b)
+        assert(binInputStream.read(b) == 3073)
 
         val label = b(0) & 0xFF
 

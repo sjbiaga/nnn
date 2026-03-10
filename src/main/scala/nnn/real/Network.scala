@@ -173,11 +173,11 @@ object Network:
 
     def xavier[I <: Int: ValueOf,
                O <: Int: ValueOf](activation: Activation): Seq[Neuron[I]] =
-      this[I, O](Xavier(valueOf[I], valueOf[O]), activation)
+      apply[I, O](Xavier(valueOf[I], valueOf[O]), activation)
 
     def kaiming[I <: Int: ValueOf,
                 O <: Int: ValueOf](activation: Activation = Activation.ReLU): Seq[Neuron[I]] =
-      this[I, O](Kaiming(valueOf[I]), activation)
+      apply[I, O](Kaiming(valueOf[I]), activation)
 
   case class Layer[N <: Int: ValueOf](neurons: Neuron[N]*):
     require(valueOf[N] == neurons.size)

@@ -57,9 +57,11 @@ An example of a neural network with two inputs, a hidden layer with ten neurons,
 and one output is the following:
 
 ```Scala
+def shapeOf[L <: Int](using n: ValueOf[N[L]]): Int = n.value
+
 type N[L <: Int] = L match { case 0 => 2 case 1 => 10 case 2 => 1 }
 
-given List[Int] = 2 :: 10 :: 1 :: Nil
+given List[Int] = shapeOf[0] :: shapeOf[1] :: shapeOf[2] :: Nil
 
 Network[N, 2](loss = MSE[1](), learningRate = 3, ...)
 ```

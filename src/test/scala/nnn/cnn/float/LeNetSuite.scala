@@ -88,8 +88,6 @@ class LeNetSuite extends FunSuite:
 
     type N[L <: Int] = L match { case 4 => FL[4]*FB[4]*D[4] case 5 => 120 case 6 => 84 case 7 | 8 => 10 }
 
-    given List[Boolean] = false :: true :: false :: true :: false :: Nil
-
     // true     FL   FB   KL   KB   KS   0    D
     // false    FL   FB   PL   PB   PS   0    D
     given List[(Int, Int, Int, Int, Int, Int, Int)] = imageOf
@@ -101,7 +99,7 @@ class LeNetSuite extends FunSuite:
 
     given List[Int] = shapeOf[4] :: shapeOf[5] :: shapeOf[6] :: shapeOf[7] :: shapeOf[8] :: Nil
 
-    print("Initializing LeNet CNN...")
+    print("Initializing MNIST LeNet CNN...")
 
     // val ln = Network[FL, FB, KL, KB, KS, D, PL, PB, PS, 4, N, 8](
     //   loss = CCE[10](),
@@ -129,19 +127,21 @@ class LeNetSuite extends FunSuite:
       D[8](Layer.Softmax[10](Kaiming(10)))
     )
 
-    println(" done.")
-
     val data = Data[32, 32, 1, 10]({
       val read = 1010 // 60000 // 20000
       val train = 10 // 60000 // 20000
 
       val drop = rnd.nextInt(read-train+1)
 
+      print(s" Reading $read images...")
+
       for
         case image @ Image(label: Int, _) <- rnd.shuffle(trainMNIST("./data/MNIST", drop+train, false).drop(drop))
       yield
         Input(image) -> OneHotOutput(label)
     }*)
+
+    println(" done.")
 
     val batch = 1 // 100
     val epochs = 2 // 20

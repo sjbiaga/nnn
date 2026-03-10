@@ -27,4 +27,4 @@ Global / bloopExportJarClassifiers := Some(Set("sources"))
 Global / onChangedBuildSource := ReloadOnSourceChanges
 //Global / onChangedBuildSource := IgnoreSourceChanges
 
-Test / parallelExecution := true
+Test / parallelExecution := false

@@ -18,6 +18,8 @@ class NetworkSuite extends FunSuite:
 
   test("NN https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example") {
 
+    def shapeOf[L <: Int](using n: ValueOf[N[L]]): Int = n.value
+
     def D[L <: Int](layer: Layer[?, ?])
                    (using p: ValueOf[N[L-1]], n: ValueOf[N[L]]): layer.type =
       require(n.value == layer.neurons.size)
@@ -26,7 +28,7 @@ class NetworkSuite extends FunSuite:
 
     type N[L <: Int] = L match { case 0 => 2 case 1 => 2 case 2 => 2 }
 
-    given List[Int] = 2 :: 2 :: 2 :: Nil
+    given List[Int] = shapeOf[0] :: shapeOf[1] :: shapeOf[2] :: Nil
 
     val nn = Network[N, 2](
       loss = MSE[2](),
@@ -61,6 +63,8 @@ class NetworkSuite extends FunSuite:
 
   test("XOR https://github.com/lexesj/java-toy-neural-network") {
 
+    def shapeOf[L <: Int](using n: ValueOf[N[L]]): Int = n.value
+
     def D[L <: Int](layer: Layer[?, ?])
                    (using p: ValueOf[N[L-1]], n: ValueOf[N[L]]): layer.type =
       require(n.value == layer.neurons.size)
@@ -69,7 +73,7 @@ class NetworkSuite extends FunSuite:
 
     type N[L <: Int] = L match { case 0 => 2 case 1 => 10 case 2 => 1 }
 
-    given List[Int] = 2 :: 10 :: 1 :: Nil
+    given List[Int] = shapeOf[0] :: shapeOf[1] :: shapeOf[2] :: Nil
 
     val xor = Network[N, 2](
       loss = MSE[1](),

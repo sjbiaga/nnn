@@ -32,7 +32,6 @@ case class Network[
   parametersSGD: (Float, Float, Float),
   layers: Layer*
 )(using
-  pattern: List[Boolean],
   volume: List[(Int, Int, Int, Int, Int, Int, Int)],
   shape: List[Int]
 ):
@@ -58,7 +57,6 @@ case class Network[
   def rows(using l: Int) = 0 until layers(l-1).neurons.size
   val cols = K+1 to M
 
-  require(K+1 == pattern.size)
   require(M == layers.size)
   require(!layers(0).isInstanceOf[Pooling[?, ?, ?]])
   require(!layers(M-1).isInstanceOf[Dropout[?, ?]])
@@ -76,7 +74,7 @@ case class Network[
     given Int <- maps
     l = given_Int-1
   do
-    if pattern(given_Int)
+    if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
     then
       {
         val P = valueOf[KL[given_Int.type]]
@@ -179,9 +177,8 @@ case class Network[
     for // CONVOLUTION|POOLING
       given Int <- maps.reverse
       l = given_Int-1
-      given Boolean = pattern(given_Int)
     do
-      if given_Boolean
+      if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
       then // CONVOLUTION
         NBETA ::= null
         NBIAS ::= Vector[Float].zero[D[given_Int.type]]
@@ -215,9 +212,8 @@ case class Network[
       for // CONVOLUTION|POOLING
         given Int <- maps.reverse
         l = given_Int-1
-        given Boolean = pattern(given_Int)
       do
-        if given_Boolean
+        if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
         then // CONVOLUTION
           VBETA ::= null
           VBIAS ::= Vector[Float].zero[D[given_Int.type]]
@@ -259,7 +255,6 @@ case class Network[
         for // CONVOLUTION|POOLING
           given Int <- maps
           l = given_Int-1
-          given Boolean = pattern(given_Int)
           padding = volume(given_Int)._6
         do
           val featureMapIn = {
@@ -271,7 +266,7 @@ case class Network[
           }.pad(padding)
           PAD ::= featureMapIn
           var featureMapOut = {
-            if given_Boolean
+            if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
             then // CONVOLUTION
               val kernels = layers(l).kernels[KL, KB, D[l.type]]
               featureMapIn[KS[given_Int.type]].⋆(kernels*)[D[given_Int.type]]
@@ -368,7 +363,6 @@ case class Network[
         for // CONVOLUTION|POOLING
           given Int <- maps.reverse
           l = given_Int-1
-          given Boolean = pattern(given_Int)
           padding = volume(given_Int)._6
         do
           layers(l) match
@@ -402,7 +396,7 @@ case class Network[
           val a = NET(l).shaped[FL, FB, D]
           val δ = DELTA.shaped[FL, FB, D]
                 ⊙ (a -->> layers(l).activation)
-          if given_Boolean
+          if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
           then // CONVOLUTION
             val x = PAD(l).shaped[padding.type][FL, FB, D]
             val kernels = layers(l).kernels[KL, KB, D[l.type]]
@@ -504,9 +498,8 @@ case class Network[
         for // CONVOLUTION|POOLING
           given Int <- maps
           l = given_Int-1
-          given Boolean = pattern(given_Int)
         do
-          if given_Boolean
+          if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
           then // CONVOLUTION
             for
               k <- 0 until layers(l).kernels.size
@@ -572,9 +565,8 @@ case class Network[
         for // CONVOLUTION|POOLING
           given Int <- maps
           l = given_Int-1
-          given Boolean = pattern(given_Int)
         do
-          if given_Boolean
+          if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
           then // CONVOLUTION
             for
               k <- 0 until layers(l).kernels.size
@@ -633,12 +625,11 @@ case class Network[
     for // CONVOLUTION|POOLING
       given Int <- maps
       l = given_Int-1
-      given Boolean = pattern(given_Int)
       padding = volume(given_Int)._6
     do
       val featureMapIn = OUT.shaped[FL, FB, D](using l)
       var featureMapOut = {
-        if given_Boolean
+        if !layers(l).isInstanceOf[Pooling[?, ?, ?]]
         then // CONVOLUTION
           val kernels = layers(l).kernels[KL, KB, D[l.type]]
           featureMapIn[KS[given_Int.type]].⋆(kernels*)[D[given_Int.type]]
@@ -729,18 +720,26 @@ object Network:
                                    activation: nnn.float.Activation): Seq[Neuron[I]] =
         (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), bias, activation))
 
+      def kaiming[I <: Int: ValueOf,
+                  O <: Int: ValueOf](activation: nnn.float.Activation = nnn.float.Activation.ReLU): Seq[Neuron[I]] =
+        apply[I, O](Kaiming(valueOf[I]), activation)
+
     def apply[I <: Int: ValueOf,
               O <: Int: ValueOf](initialization: Initialization,
                                  activation: nnn.float.Activation): Seq[Neuron[I]] =
       (1 to valueOf[O]).map(_ => Neuron(Vector[Float][I](initialization), initialization(), activation))
 
+    def glorot[I <: Int: ValueOf,
+               O <: Int: ValueOf](activation: nnn.float.Activation): Seq[Neuron[I]] =
+      apply[I, O](Glorot(valueOf[I], valueOf[O]), activation)
+
     def xavier[I <: Int: ValueOf,
                O <: Int: ValueOf](activation: nnn.float.Activation): Seq[Neuron[I]] =
-      this[I, O](Xavier(valueOf[I], valueOf[O]), activation)
+      apply[I, O](Xavier(valueOf[I], valueOf[O]), activation)
 
     def kaiming[I <: Int: ValueOf,
                 O <: Int: ValueOf](activation: nnn.float.Activation = nnn.float.Activation.ReLU): Seq[Neuron[I]] =
-      this[I, O](Kaiming(valueOf[I]), activation)
+      apply[I, O](Kaiming(valueOf[I]), activation)
 
   sealed trait Layer
 
@@ -779,21 +778,22 @@ object Network:
         extends Dense[N, O](neurons*)
 
     class Softmax[N <: Int: ValueOf](initialization: Initialization,
+                                     bias: Float = 0,
                                      activation: nnn.float.Activation = nnn.float.Activation.Softmax)
         extends Dense[N, N](Neuron[N, N](initialization, activation)*):
-      this.neurons.foreach(_.bias = 0)
+      this.neurons.foreach(_.bias = bias)
 
     extension (self: Layer)
       def pooling[P[_ <: Int] <: Int,
                   Q[_ <: Int] <: Int,
                   S[_ <: Int] <: Int](using l: Int): nnn.cnn.Pooling[Float, P[l.type], Q[l.type], S[l.type]] =
         self.asInstanceOf[Pooling[P[l.type], Q[l.type], S[l.type]]].pooling
-      def activation(using p: Boolean): nnn.float.Activation =
-        if p
+      def activation: nnn.float.Activation =
+        if self.isInstanceOf[Pooling[?, ?, ?]]
         then
-          self.asInstanceOf[Convolutional[?, ?, ?, ?]].activation
-        else
           self.asInstanceOf[Pooling[?, ?, ?]].activation
+        else
+          self.asInstanceOf[Convolutional[?, ?, ?, ?]].activation
       def kernels[L[_ <: Int] <: Int, B[_ <: Int] <: Int, D <: Int](using l: Int): Seq[Kernel[Float, L[l.type], B[l.type], D]] =
         self.asInstanceOf[Convolutional[L[l.type], B[l.type], D, ?]].kernels
       def neurons: Seq[Neuron[?]] = self.asInstanceOf[Dense[?, ?]].neurons
