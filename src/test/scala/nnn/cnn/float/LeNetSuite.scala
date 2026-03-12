@@ -127,58 +127,63 @@ class LeNetSuite extends FunSuite:
       D[8](Layer.Softmax[10](Kaiming(10)))
     )
 
-    val data = Data[32, 32, 1, 10]({
-      val read = 1010 // 60000 // 20000
-      val train = 10 // 60000 // 20000
+    {
+      val data = Data[32, 32, 1, 10]({
+        val read = 1010 // 60000 // 20000
+        val train = 10 // 60000 // 20000
 
-      val drop = rnd.nextInt(read-train+1)
+        val drop = rnd.nextInt(read-train+1)
 
-      print(s" Reading $read images...")
+        print(s" Reading $read images...")
 
-      for
-        case image @ Image(label: Int, _) <- rnd.shuffle(trainMNIST("./data/MNIST", drop+train, false).drop(drop))
-      yield
-        Input(image) -> OneHotOutput(label)
-    }*)
+        for
+          case image @ Image(label: Int, _) <- rnd.shuffle(trainMNIST("./data/MNIST", drop+train, false).drop(drop))
+        yield
+          Input(image) -> OneHotOutput(label)
+      }*)
 
-    println(" done.")
+      println(" done.")
 
-    val batch = 1 // 100
-    val epochs = 2 // 20
+      val batch = 1 // 100
+      val epochs = 2 // 20
 
-    print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
+      print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
-    ln.train(data, batch, epochs) {
-      case (count, done) if count % 5 == 0 && done % 5000 == 0 =>
-        print(s" Passing through $count epochs and $done images...")
-      case _ =>
+      ln.train(data, batch, epochs) {
+        case (count, done) if count % 5 == 0 && done % 5000 == 0 =>
+          print(s" Passing through $count epochs and $done images...")
+        case _ =>
+      }
     }
 
     println(" done.")
 
     val weights = ln()
 
-    val read = 1010 // 10000
-    val test = 10 // 10000
+    {
+      val read = 1010 // 10000
+      val test = 10 // 10000
 
-    val drop = rnd.nextInt(read-test+1)
+      val drop = rnd.nextInt(read-test+1)
 
-    print(s"Testing $test images...")
+      print(s"Testing $test images...")
 
-    var correct = 0
+      var correct = 0
 
-    for
-      case image @ Image(label: Int, _) <- rnd.shuffle(testMNIST("./data/MNIST", drop+test, false).drop(drop))
-      Output(answer) = ln.test(Input(image), weights)
-      if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
-    do
-      correct += 1
+      for
+        case image @ Image(label: Int, _) <- rnd.shuffle(testMNIST("./data/MNIST", drop+test, false).drop(drop))
+        Output(answer) = ln.test(Input(image), weights)
+        if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
+      do
+        correct += 1
 
-    println(" done.")
+      println(" done.")
 
-    val accuracy = ((1f * correct / test) * 100).toInt
+      val accuracy = ((1f * correct / test) * 100).toInt
 
-    assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
+      assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
+    }
+
   }
 
 

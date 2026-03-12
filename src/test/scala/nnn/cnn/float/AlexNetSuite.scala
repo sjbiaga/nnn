@@ -123,59 +123,64 @@ class AlexNetSuite extends FunSuite:
       D[12](Layer.Softmax[10](gaussian, 1f))
     )
 
-    val data = Data[227, 227, 3, 10]({
-      val read = 0 // 10000
-      val train = 0 // 10000
+    {
+      val data = Data[227, 227, 3, 10]({
+        val read = 0 // 10000
+        val train = 0 // 10000
 
-      val drop = rnd.nextInt(read-train+1)
-      val batch = 1+rnd.nextInt(5)
+        val drop = rnd.nextInt(read-train+1)
+        val batch = 1+rnd.nextInt(5)
 
-      print(s" Reading $read images from batch $batch...")
+        print(s" Reading $read images from batch $batch...")
 
-      for
-        case image @ Image(label: Int, _) <- rnd.shuffle(trainCIFAR10("./data/cifar-10-batches-bin", batch, drop+train, true).drop(drop))
-      yield
-        Input(image) -> OneHotOutput(label)
-    }*)
+        for
+          case image @ Image(label: Int, _) <- rnd.shuffle(trainCIFAR10("./data/cifar-10-batches-bin", batch, drop+train, true).drop(drop))
+        yield
+          Input(image) -> OneHotOutput(label)
+      }*)
 
-    println(" done.")
+      println(" done.")
 
-    val batch = 1 // 128
-    val epochs = 1 // 90
+      val batch = 1 // 128
+      val epochs = 0 // 90
 
-    print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
+      print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
-    an.train(data, batch, epochs) {
-      case (count, done) if count % 1 == 0 && done % 32 == 0 =>
-        print(s" Passing through $count epochs and $done images...")
-      case _ =>
+      an.train(data, batch, epochs) {
+        case (count, done) if count % 1 == 0 && done % 32 == 0 =>
+          print(s" Passing through $count epochs and $done images...")
+        case _ =>
+      }
     }
 
     println(" done.")
 
     val weights = an()
 
-    val read = 0 // 10000
-    val test = 0 // 10000
+    {
+      val read = 0 // 10000
+      val test = 0 // 10000
 
-    val drop = rnd.nextInt(read-test+1)
+      val drop = rnd.nextInt(read-test+1)
 
-    print(s"Testing $test images...")
+      print(s"Testing $test images...")
 
-    var correct = 0
+      var correct = 0
 
-    for
-      case image @ Image(label: Int, _) <- rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", drop+test, true).drop(drop))
-      Output(answer) = an.test(Input(image), weights)
-      if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
-    do
-      correct += 1
+      for
+        case image @ Image(label: Int, _) <- rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", drop+test, true).drop(drop))
+        Output(answer) = an.test(Input(image), weights)
+        if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
+      do
+        correct += 1
 
-    println(" done.")
+      println(" done.")
 
-    val accuracy = ((1f * correct / test) * 100).toInt
+      val accuracy = ((1f * correct / test) * 100).toInt
 
-    //assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
+      //assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
+    }
+
   }
 
 

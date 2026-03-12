@@ -21,7 +21,7 @@ import AlexNet10Suite.*
 
 class AlexNet10Suite extends FunSuite:
 
-  //override val munitTimeout = 7.days
+  //override val munitTimeout = 14.days
 
   test("CNN:CIFAR-10 https://en.wikipedia.org/wiki/AlexNet#/media/File:AlexNet_block_diagram.svg") {
 
@@ -123,69 +123,74 @@ class AlexNet10Suite extends FunSuite:
       D[12](Layer.Softmax[10](gaussian, 1f))
     )
 
-    val label = rnd.nextInt(10)
+    val label = -1 // rnd.nextInt(10)
 
-    val batch = 1 // 128
+    {
+      val batch = 1 // 128
 
-    val data = Data[32, 32, 3, 10]({
-      val read = 0 // 10000
-      val train = 0 // 10000
+      val data = Data[32, 32, 3, 10]({
+        val read = 0 // 10000
+        val train = 0 // 10000
 
-      val drop = rnd.nextInt(read-train+1)
+        val drop = rnd.nextInt(read-train+1)
 
-      val trainData = rnd.shuffle(trainCIFAR10("./data/cifar-10-batches-bin", label, drop+train, true).drop(drop))
+        val trainData = rnd.shuffle(trainCIFAR10("./data/cifar-10-batches-bin", label, drop+train, true).drop(drop))
 
-      val size = (trainData.size / batch) * batch
+        val size = (trainData.size / batch) * batch
 
-      print(s" Reading $size images labelled '${labels(label)}'...")
+        print(s""" Reading $size images${if label < 0 then "" else " labelled '${labels(label)}'"}...""")
 
-      for
-        case image @ Image(label: Int, _) <- trainData.drop(trainData.size - size)
-      yield
-        Input(image) -> OneHotOutput(label)
-    }*)
+        for
+          case image @ Image(label: Int, _) <- trainData.drop(trainData.size - size)
+        yield
+          Input(image) -> OneHotOutput(label)
+      }*)
 
-    println(" done.")
+      println(" done.")
 
-    val epochs = 0 // 90
+      val epochs = 0 // 90
 
-    print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
+      print(s"Training ${data.io.size} images in $batch batches and $epochs epochs...")
 
-    an.train(data, batch, epochs) {
-      case (count, done) if count % 1 == 0 && done % 128 == 0 =>
-        print(s" Passing through $count epochs and $done images...")
-      case _ =>
+      an.train(data, batch, epochs) {
+        case (count, done) if count % 5 == 0 && done % 256 == 0 =>
+          print(s" Passing through $count epochs and $done images...")
+        case _ =>
+      }
     }
 
     println(" done.")
 
     val weights = an()
 
-    val read = 0 // 10000
-    val test = 0 // 10000
+    {
+      val read = 0 // 10000
+      val test = 0 // 10000
 
-    val drop = rnd.nextInt(read-test+1)
+      val drop = rnd.nextInt(read-test+1)
 
-    val testData = rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", label, drop+test, true).drop(drop))
+      val testData = rnd.shuffle(testCIFAR10("./data/cifar-10-batches-bin", label, drop+test, true).drop(drop))
 
-    val size = testData.size
+      val size = testData.size
 
-    print(s"Testing $size images labelled '${labels(label)}'...")
+      print(s"""Testing $size images${if label < 0 then "" else " labelled '${labels(label)}'"}...""")
 
-    var correct = 0
+      var correct = 0
 
-    for
-      case image @ Image(label: Int, _) <- testData
-      Output(answer) = an.test(Input(image), weights)
-      if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
-    do
-      correct += 1
+      for
+        case image @ Image(label: Int, _) <- testData
+        Output(answer) = an.test(Input(image), weights)
+        if label == answer.toSeq.zipWithIndex.maxBy(_._1)._2
+      do
+        correct += 1
 
-    println(" done.")
+      println(" done.")
 
-    val accuracy = ((1f * correct / size) * 100).toInt
+      val accuracy = ((1f * correct / size) * 100).toInt
 
-    //assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
+      //assert(accuracy >= 98, s"Accuracy: $accuracy% < 98%")
+    }
+
   }
 
 
@@ -224,11 +229,15 @@ object AlexNet10Suite:
     CIFAR10(path, "test_batch", label, size, zero)
 
   def CIFAR10(path: String, name: String, label: Int, size: Int, zero: Boolean): Seq[Image[Float, 32, 32, 3]] =
-    CIFAR10(path, name, zero)
-      .filter(_.label == label)
-      .take(size)
+    if label < 0
+    then
+      CIFAR10(path, name, size, zero)
+    else
+      CIFAR10(path, name, Int.MaxValue, zero)
+        .filter(_.label == label)
+        .take(size)
 
-  def CIFAR10(path: String, name: String, zero: Boolean): Seq[Image[Float, 32, 32, 3]] =
+  def CIFAR10(path: String, name: String, size: Int, zero: Boolean): Seq[Image[Float, 32, 32, 3]] =
 
     val binFileName = s"$name.bin"
 
@@ -245,7 +254,7 @@ object AlexNet10Suite:
     try
 
       for
-        _ <- 0 until 10000
+        _ <- 0 until (size min 10000)
       yield
         // https://gist.github.com/sugyan/fa8391fb2b2da68ee981a5962d58e834
 
